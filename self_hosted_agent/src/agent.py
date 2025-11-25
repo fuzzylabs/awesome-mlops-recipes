@@ -1,19 +1,15 @@
 """PR review Agent."""
 
 import logfire
-import mlflow
 from pydantic_ai import Agent, RunContext
 
 from model import get_anthropic_model
 from tools import github_server, filter_github_tools
+from prompt import SYSTEM_PROMPT
 
 # Configure observability
 logfire.configure()
 logfire.instrument_pydantic_ai()
-
-# Load prompt from MLflow at module level (before tracing starts)
-_prompt = mlflow.genai.load_prompt("pr-review-agent-system-prompt")
-SYSTEM_PROMPT = _prompt.template
 
 # Create the PR review agent
 pr_review_agent = Agent(
@@ -31,7 +27,6 @@ async def get_system_prompt(ctx: RunContext[None]) -> str:
 
 
 if __name__ == '__main__':
-    # Only run the agent when executing this file directly
     result = pr_review_agent.run_sync(
         'Review the pull request titled "Add Ollama provider support for local LLM inference"'
     )
