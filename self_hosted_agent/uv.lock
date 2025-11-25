@@ -1452,6 +1452,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/0a/5dfaff5c495fdeebab272c86af0b90c316d037b113348e18c5b8b01198a3/pydantic_evals-1.22.0-py3-none-any.whl", hash = "sha256:94ef58c5fbc80bf75e535690fa964578c06341d5982f45781c987e0a6b8a4e0d", size = 56135, upload-time = "2025-11-22T00:37:15.067Z" },
 ]
 
+[package.optional-dependencies]
+logfire = [
+    { name = "logfire" },
+]
+
 [[package]]
 name = "pydantic-graph"
 version = "1.22.0"
@@ -1761,13 +1766,17 @@ wheels = [
 [[package]]
 name = "self-hosted-agent"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "pydantic-ai" },
+    { name = "pydantic-evals", extra = ["logfire"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pydantic-ai", specifier = ">=1.22.0" }]
+requires-dist = [
+    { name = "pydantic-ai", specifier = ">=1.22.0" },
+    { name = "pydantic-evals", extras = ["logfire"], specifier = ">=1.22.0" },
+]
 
 [[package]]
 name = "shellingham"
