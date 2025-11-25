@@ -1,6 +1,7 @@
 """Common utilities and fixtures for span-based evaluations."""
 
-from agent import pr_review_agent, github_server
+from agent import pr_review_agent
+from tools import github_server
 from pydantic_evals import Case
 
 from typing import Any

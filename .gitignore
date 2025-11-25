@@ -217,3 +217,7 @@ __marimo__/
 
 # Logfire
 .logfire/
+
+# MLflow
+mlflow.db
+mlruns/
