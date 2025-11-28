@@ -135,11 +135,60 @@ curl -X POST http://localhost:8080/review \
 ## 🎯 Evaluation
 
 Run the LLM judge evaluation suite:
+
+> **Note:** Make sure to port-forward required services first (keep them running in separate terminals):
+> ```bash
+> make portforward-mlflow  # Required for logging results
+> make portforward-vllm    # Required if using vLLM provider
+> ```
+
+Then, run:
 ```bash
 make eval-review-quality
 ```
 
-Results are logged to MLflow for tracking prompt performance across versions.
+## 🧪 Experimentation
+
+### Iterating on System Prompts
+
+The agent loads its system prompt from MLflow at startup. Here's how to experiment with different prompt versions:
+
+**1. Update your prompt**
+
+Edit the prompt template in `prmopt_versioning/update.py`, then register the new version:
+```bash
+make portforward-mlflow  # If not already running
+make update-prompt
+```
+
+**2. Run evaluation**
+
+Test the new prompt version locally:
+```bash
+make eval-review-quality
+```
+
+Results are logged to MLflow, allowing you to compare performance across prompt versions.
+
+**3. Deploy the updated prompt**
+
+To use the **latest** prompt version in your deployed agent:
+```bash
+kubectl rollout restart deployment pr-review-agent -n agent
+```
+
+To use a **specific** prompt version, update `prompt_version` in `src/config.yaml` or `k8s/agent/configmap.yaml`, then:
+```bash
+kubectl rollout restart deployment pr-review-agent -n agent
+```
+
+### Comparing Results
+
+Use the MLflow UI to compare evaluation metrics across prompt versions:
+```bash
+make portforward-mlflow
+# Open http://localhost:5000 and navigate to Experiments
+```
 
 ## ⚙️ Configuration
 
