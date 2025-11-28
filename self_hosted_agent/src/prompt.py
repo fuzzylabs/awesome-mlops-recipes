@@ -1,12 +1,16 @@
 """Load system prompt from MLflow."""
 
 import mlflow
+from config import get_config
 
-# Remove this when we have a proper tracking URI
-mlflow.set_tracking_uri("sqlite:///mlflow.db")
+# Load config and set MLflow tracking URI
+cfg = get_config()
+mlflow.set_tracking_uri(cfg.mlflow.tracking_uri)
 
-# Load prompt from MLflow at module level
-_prompt = mlflow.genai.load_prompt("pr-review-agent-system-prompt")
+# Load prompt from MLflow at module level with specified version
+_prompt = mlflow.genai.load_prompt(
+    cfg.mlflow.prompt_name,
+    version=cfg.mlflow.prompt_version or None # None for latest version
+)
 SYSTEM_PROMPT = _prompt.template
-
-#print(SYSTEM_PROMPT)
+PROMPT_VERSION = str(_prompt.version)

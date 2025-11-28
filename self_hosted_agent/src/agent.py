@@ -3,17 +3,18 @@
 import logfire
 from pydantic_ai import Agent, RunContext
 
-from model import get_anthropic_model
+from model import get_model
 from tools import github_server, filter_github_tools
 from prompt import SYSTEM_PROMPT
+
 
 # Configure observability
 logfire.configure()
 logfire.instrument_pydantic_ai()
 
-# Create the PR review agent
+# Create the PR review agent with model from config
 pr_review_agent = Agent(
-    get_anthropic_model(),
+    get_model(),  # Automatically uses provider from config.yaml
     toolsets=[github_server],
     prepare_tools=filter_github_tools,
 )

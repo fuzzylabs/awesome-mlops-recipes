@@ -8,6 +8,12 @@ dependencies = [
     "mlflow>=3.6.0",
     "pydantic-ai>=1.22.0",
     "pydantic-evals[logfire]>=1.22.0",
+    "pyyaml>=6.0.3",
+]
+
+[dependency-groups]
+experiment = [
+    "ipykernel>=7.1.0",
 ]
 
 [tool.uv]
