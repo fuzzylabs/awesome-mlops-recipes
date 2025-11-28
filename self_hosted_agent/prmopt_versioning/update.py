@@ -2,18 +2,23 @@
 
 import mlflow
 
-PROMPT_NAME = "pr-review-agent-system-prompt"
 
-# Remote/Local MLflow
-mlflow.set_tracking_uri("http://localhost:5000")
+def update_prompt(prompt_name: str, new_template: str):
+    """Update the prompt in MLFlow prompt registry."""
+    mlflow.set_tracking_uri("http://localhost:5000")
 
-_prompt = mlflow.genai.load_prompt(
-    PROMPT_NAME,
-)
+    updated_prompt = mlflow.genai.register_prompt(
+        name=prompt_name,
+        template=new_template,
+        commit_message="Update prompt",
+    )
+    print(f"Updated prompt: {updated_prompt.name}")
 
-print(f"Current prompt template: {_prompt.template}")
 
-new_template = """\
+if __name__ == "__main__":
+    prompt_name = "pr-review-agent-system-prompt"
+
+    new_template = """\
 You are an expert pull request reviewer for the fuzzylabs/sre-agent repository.
 
 REPO SUMMARY:
@@ -53,8 +58,4 @@ RULES:
 - Give clear and actionable feedback based on the actual changes
 """
 
-# Register a new version of an existing prompt
-updated_prompt = mlflow.genai.register_prompt(
-    name=PROMPT_NAME,  # Specify the existing prompt name
-    commit_message="Improvement",
-)
+    update_prompt(prompt_name, new_template)

@@ -34,7 +34,7 @@ spec:
           sizeLimit: "2Gi"
       containers:
         - name: qwen3
-          image: 196980041487.dkr.ecr.eu-west-2.amazonaws.com/self-hosted-agent:latest
+          image: 196980041487.dkr.ecr.eu-west-2.amazonaws.com/vllm-server:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

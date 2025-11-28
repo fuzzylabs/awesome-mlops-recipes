@@ -2,14 +2,14 @@
 set -e
 
 echo "================================================"
-echo "  Building and Pushing vLLM Server"
+echo "  Building and Pushing PR Review Agent"
 echo "================================================"
 echo ""
 
 # Configuration
-ECR_REPOSITORY="vllm-server"
-IMAGE_TAG="${1:-latest}"
-AWS_REGION="eu-west-2"
+ECR_REPOSITORY="agent-server"
+IMAGE_TAG="${1:-latest}"  # Use first argument or default to 'latest'
+AWS_REGION="eu-west-2"  # Change if needed
 
 # Get AWS account ID
 echo "Getting AWS account ID..."
@@ -20,12 +20,17 @@ echo ""
 FULL_IMAGE_NAME="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
 FULL_IMAGE_NAME_LATEST="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest"
 
-echo "Image: ${FULL_IMAGE_NAME}"
+echo "Image: $FULL_IMAGE_NAME"
 echo ""
+
+# Change to project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
 
 # Build Docker image
 echo "Building Docker image..."
 docker buildx build --platform linux/amd64 \
+    -f src/Dockerfile \
     -t "${FULL_IMAGE_NAME}" \
     -t "${FULL_IMAGE_NAME_LATEST}" \
     --load .

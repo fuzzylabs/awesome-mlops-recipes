@@ -1,6 +1,6 @@
 """Common utilities and fixtures for span-based evaluations."""
 
-from agent import pr_review_agent
+from agent import initialise_agent
 from tools import github_server
 from pydantic_evals import Case
 
@@ -9,6 +9,8 @@ from dataclasses import dataclass
 
 from pydantic_ai import RunContext, ToolsetTool, WrapperToolset
 
+
+PR_REVIEW_AGENT, _ = initialise_agent()
 
 # Standard test cases
 STANDARD_CASES = [
@@ -143,6 +145,6 @@ def run_agent_with_mock_tools(inputs: str) -> str:
     """
     mock_toolset = MockToolset(wrapped=github_server)
     
-    with pr_review_agent.override(toolsets=[mock_toolset]):
-        result = pr_review_agent.run_sync(inputs)
+    with PR_REVIEW_AGENT.override(toolsets=[mock_toolset]):
+        result = PR_REVIEW_AGENT.run_sync(inputs)
         return result.output

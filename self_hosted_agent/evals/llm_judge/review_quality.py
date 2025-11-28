@@ -1,22 +1,24 @@
 """Evaluate PR review quality using real git diffs."""
 
 from typing import Any
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 from pydantic_evals import Dataset
 from pydantic_evals.evaluators import LLMJudge
 from pydantic_ai import RunContext, ToolsetTool, WrapperToolset
 
-from agent import pr_review_agent
+from agent import initialise_agent
 from test_cases import TEST_CASES
 
 from pydantic_ai.mcp import MCPServerStreamableHTTP
 
 import mlflow
 from config import get_config
-from prompt import PROMPT_VERSION
+
 
 LLM_JUDGE_MODEL = 'anthropic:claude-sonnet-4-5'
+PR_REVIEW_AGENT, PROMPT_VERSION = initialise_agent()
+INPUTS_TO_METADATA = {case.inputs: case.metadata for case in TEST_CASES}
 
 @dataclass
 class MockToolsetWithDiff(WrapperToolset):
@@ -78,9 +80,6 @@ class MockToolsetWithDiff(WrapperToolset):
         return {"mocked": True, "tool": name, "args": tool_args}
 
 
-INPUTS_TO_METADATA = {case.inputs: case.metadata for case in TEST_CASES}
-
-
 def run_review_with_diff(inputs: str) -> str:
     """Run agent with a specific test case's diff.
     
@@ -88,7 +87,7 @@ def run_review_with_diff(inputs: str) -> str:
     We look up the metadata from our mapping.
     """
     metadata = INPUTS_TO_METADATA.get(inputs, {})
-    
+
     # Create a fresh MCP server for this event loop (avoids event loop conflicts)
     fresh_github_server = MCPServerStreamableHTTP(
         'https://api.githubcopilot.com/mcp/',
@@ -100,9 +99,9 @@ def run_review_with_diff(inputs: str) -> str:
         wrapped=fresh_github_server,
         test_case_metadata=metadata
     )
-    
-    with pr_review_agent.override(toolsets=[mock_toolset]):
-        result = pr_review_agent.run_sync(inputs)
+
+    with PR_REVIEW_AGENT.override(toolsets=[mock_toolset]):
+        result = PR_REVIEW_AGENT.run_sync(inputs)
         return result.output
 
 
@@ -163,7 +162,7 @@ if __name__ == '__main__':
     # Run evaluation
     print("Running evaluation...")
     report = dataset.evaluate_sync(run_review_with_diff)
-    
+        
     with mlflow.start_run(run_name=f"prompt_version_{PROMPT_VERSION}"):
         # Log parameters
         mlflow.log_param("model_provider", cfg.model.provider)

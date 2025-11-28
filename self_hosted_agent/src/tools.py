@@ -4,6 +4,9 @@ from pydantic_ai import RunContext, ToolDefinition
 from pydantic_ai.mcp import MCPServerStreamableHTTP
 import os
 
+from config import get_config
+
+cfg = get_config()
 
 async def filter_github_tools(
     ctx: RunContext[None], tool_defs: list[ToolDefinition]
@@ -20,6 +23,6 @@ async def filter_github_tools(
 # GitHub MCP server
 github_server = MCPServerStreamableHTTP(
     'https://api.githubcopilot.com/mcp/',
-    headers={'Authorization': f'Bearer {os.getenv("GITHUB_TOKEN")}'}
+    headers={'Authorization': f'Bearer {cfg.github.token}'}
 )
 

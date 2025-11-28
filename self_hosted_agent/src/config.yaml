@@ -13,19 +13,14 @@ model:
   # vLLM settings (self-hosted in Kubernetes)
   vllm:
     model_name: "Qwen/Qwen3-4B-Thinking-2507"
-    base_url: "http://localhost:8000/v1"
+    # base_url: "http://localhost:8000/v1"
+    base_url: "http://qwen3.vllm.svc.cluster.local:8000/v1"
     # For K8s service: "http://qwen3.vllm.svc.cluster.local:8000/v1"
   
-  # Ollama settings (local development)
-  ollama:
-    model_name: "qwen3:4b-thinking-2507-fp16"
-    base_url: "http://localhost:11434/v1"
 
 # MLflow Configuration
 mlflow:
-  tracking_uri: "sqlite:///mlflow.db"  # Relative to project root
+  tracking_uri: "http://localhost:5000"
   prompt_name: "pr-review-agent-system-prompt"
   # Leave empty for latest version
   prompt_version: ""
-  experiment_name: "pr-review-agent"
-  # For remote MLflow: "http://mlflow-server:5000"

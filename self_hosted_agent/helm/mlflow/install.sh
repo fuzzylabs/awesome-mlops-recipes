@@ -3,8 +3,8 @@ set -e
 
 echo "Installing MLflow Helm Chart on Kubernetes..."
 
-MLFLOW_S3_BUCKET="self-hosted-agent-mlflow-artifacts-6299d05"
-MLFLOW_S3_ROLE_ARN="arn:aws:iam::196980041487:role/self-hosted-agent-mlflow-s3-role-1c4dd9f"
+MLFLOW_S3_BUCKET="self-hosted-agent-mlflow-artifacts-a29dbbb"
+MLFLOW_S3_ROLE_ARN="arn:aws:iam::196980041487:role/self-hosted-agent-mlflow-s3-role-35785a0"
 MLFLOW_DB_ENDPOINT="self-hosted-agent-mlflow-db.cjoke00gu0ym.eu-west-2.rds.amazonaws.com"
 MLFLOW_DB_NAME="mlflow"
 MLFLOW_DB_USERNAME="mlflow"

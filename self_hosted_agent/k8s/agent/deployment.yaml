@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pr-review-agent
+  namespace: agent
+  labels:
+    app: pr-review-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pr-review-agent
+  template:
+    metadata:
+      labels:
+        app: pr-review-agent
+    spec:
+      containers:
+        - name: agent
+          image: 196980041487.dkr.ecr.eu-west-2.amazonaws.com/agent-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pr-review-agent-secrets
+                  key: GITHUB_TOKEN
+            - name: LOGFIRE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pr-review-agent-secrets
+                  key: LOGFIRE_TOKEN
+          volumeMounts:
+            - name: config
+              mountPath: /app/src/config.yaml
+              subPath: config.yaml
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: pr-review-agent-config
+
