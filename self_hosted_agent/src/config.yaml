@@ -1,22 +1,20 @@
 # PR Review Agent Configuration
+# You can override this file with a ConfigMap in Kubernetes
 
 # Model Configuration
 model:
-  # Choose: 'anthropic', 'vllm', or 'ollama'
-  provider: "anthropic"
+  # Choose: 'vllm', or 'ollama'
+  provider: "ollama"
   
-  # Anthropic (Claude) settings
-  anthropic:
-    model_name: "claude-sonnet-4-5"
-    # API key loaded from ANTHROPIC_API_KEY env var
+  # Ollama settings
+  ollama:
+    model_name: "Qwen/Qwen3-4B-Thinking-2507"
+    base_url: "http://localhost:8000/v1"
   
   # vLLM settings (self-hosted in Kubernetes)
   vllm:
     model_name: "Qwen/Qwen3-4B-Thinking-2507"
-    # base_url: "http://localhost:8000/v1"
-    base_url: "http://qwen3.vllm.svc.cluster.local:8000/v1"
-    # For K8s service: "http://qwen3.vllm.svc.cluster.local:8000/v1"
-  
+    base_url: "http://localhost:8000/v1"
 
 # MLflow Configuration
 mlflow:

@@ -3,12 +3,23 @@ set -e
 
 echo "Installing MLflow Helm Chart on Kubernetes..."
 
-MLFLOW_S3_BUCKET="self-hosted-agent-mlflow-artifacts-a29dbbb"
-MLFLOW_S3_ROLE_ARN="arn:aws:iam::196980041487:role/self-hosted-agent-mlflow-s3-role-35785a0"
-MLFLOW_DB_ENDPOINT="self-hosted-agent-mlflow-db.cjoke00gu0ym.eu-west-2.rds.amazonaws.com"
-MLFLOW_DB_NAME="mlflow"
-MLFLOW_DB_USERNAME="mlflow"
-MLFLOW_DB_PASSWORD="password123"
+# Check if required environment variables are set
+if [ -z "$MLFLOW_S3_BUCKET" ] || [ -z "$MLFLOW_S3_ROLE_ARN" ] || \
+   [ -z "$MLFLOW_DB_ENDPOINT" ] || [ -z "$MLFLOW_DB_NAME" ] || \
+   [ -z "$MLFLOW_DB_USERNAME" ] || [ -z "$MLFLOW_DB_PASSWORD" ]; then
+    echo "Error: Required environment variables not set."
+    echo ""
+    echo "Please set the following environment variables:"
+    echo "  export MLFLOW_S3_BUCKET=\"your-bucket\""
+    echo "  export MLFLOW_S3_ROLE_ARN=\"arn:aws:iam::...\""
+    echo "  export MLFLOW_DB_ENDPOINT=\"your-rds-endpoint\""
+    echo "  export MLFLOW_DB_NAME=\"mlflow\""
+    echo "  export MLFLOW_DB_USERNAME=\"mlflow\""
+    echo "  export MLFLOW_DB_PASSWORD=\"your-password\""
+    echo ""
+    echo "Or create a .env file and run: source .env"
+    exit 1
+fi
 
 # Add Helm repository
 echo "Adding Helm repository..."

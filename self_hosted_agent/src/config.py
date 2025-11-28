@@ -7,9 +7,10 @@ from pydantic import BaseModel, Field
 import os
 
 
-class AnthropicConfig(BaseModel):
-    """Anthropic model configuration."""
-    model_name: str = "claude-sonnet-4-5"
+class OllamaConfig(BaseModel):
+    """Ollama model configuration."""
+    model_name: str = "Qwen/Qwen3-4B-Thinking-2507"
+    base_url: str = "http://localhost:8000/v1"
 
 
 class VLLMConfig(BaseModel):
@@ -20,8 +21,7 @@ class VLLMConfig(BaseModel):
 
 class ModelConfig(BaseModel):
     """Model configuration."""
-    provider: Literal["anthropic", "vllm", "ollama"] = "anthropic"
-    anthropic: AnthropicConfig = Field(default_factory=AnthropicConfig)
+    ollama: OllamaConfig = Field(default_factory=OllamaConfig)
     vllm: VLLMConfig = Field(default_factory=VLLMConfig)
 
 
