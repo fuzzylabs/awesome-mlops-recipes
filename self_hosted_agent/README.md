@@ -31,7 +31,7 @@ This recipe cooks up a PR review agent running on Kubernetes, powered by vLLM fo
 
 ## ✅ Prerequisites
 
-1. **Kubernetes cluster** (EKS with GPU nodes for vLLM)
+1. **Kubernetes cluster** (EKS with 1 GPU node for vLLM and 1 CPU node for Agent and MLFlow)
 2. **AWS credentials** configured
 3. **kubectl** configured for your cluster
 4. **uv** - Python package manager ([installation guide](https://docs.astral.sh/uv/getting-started/installation/))
