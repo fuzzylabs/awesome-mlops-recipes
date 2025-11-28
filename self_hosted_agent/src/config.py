@@ -21,6 +21,7 @@ class VLLMConfig(BaseModel):
 
 class ModelConfig(BaseModel):
     """Model configuration."""
+    provider: Literal["ollama", "vllm"] = "vllm"
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
     vllm: VLLMConfig = Field(default_factory=VLLMConfig)
 

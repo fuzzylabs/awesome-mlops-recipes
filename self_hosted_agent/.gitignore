@@ -221,3 +221,8 @@ __marimo__/
 # MLflow
 mlflow.db
 mlruns/
+mlflow.env
+
+# Kubernetes
+secret.yaml
+

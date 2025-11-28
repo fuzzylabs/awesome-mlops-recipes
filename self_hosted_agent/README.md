@@ -2,6 +2,8 @@
 
 This recipe cooks up a PR review agent running on Kubernetes, powered by vLLM for model serving and MLflow for prompt management.
 
+**Cook Time**: ~1 Hour
+
 > NOTE: The recipe does not include IaC (TODO, point people to one?).
 
 ## 🥗 Ingredients
@@ -19,7 +21,7 @@ This recipe cooks up a PR review agent running on Kubernetes, powered by vLLM fo
 ├── src/                    # Agent source code & FastAPI server
 ├── evals/                  # Evaluation suites (LLM judge, span-based)
 ├── llm/                    # vLLM server Dockerfile
-├── prmopt_versioning       # prompt versioning helper scripts
+├── prmopt_versioning/      # Prompt versioning helper scripts
 ├── k8s/                    # Kubernetes manifests
 │   ├── vllm/              # vLLM deployment
 │   └── agent/             # Agent deployment
@@ -44,13 +46,22 @@ First, configure your MLflow backend:
 ```bash
 cd helm/mlflow
 cp mlflow.env.example mlflow.env
-# Edit mlflow.env with your values
-source mlflow.env
 ```
+Edit mlflow.env with your values, then:
+```bash
+source mlflow.env
+cd ../..
+```
+
 
 Deploy MLflow:
 ```bash
 make deploy-mlflow
+```
+
+Wait for the MLflow container to be ready:
+```bash
+kubectl get pods -n mlflow -w
 ```
 
 ### 2. Register Your System Prompt
@@ -79,17 +90,22 @@ You can also manage prompts via the MLflow UI at [http://localhost:5000](http://
 
 ### 3. Deploy vLLM Server
 
-Configure your model in `llm/Dockerfile`, then:
+You can configure a model of your choice in [`llm/Dockerfile`](llm/Dockerfile), default is `Qwen/Qwen3-4B-Thinking-2507`, then:
 ```bash
 make setup-vllm
 ```
 
 This will:
-- Build the vLLM Docker image
+- Build the vLLM Docker image (this will take ~20 minutes)
 - Push to ECR
 - Deploy to Kubernetes
 
-Check logs:
+Wait for it to start and become ready (~8 minutes):
+```bash
+kubectl get pods -n vllm -w
+```
+
+Check logs to verify the model server is ready to take requests (~4 minutes). You should see the `/health` endpoint getting hit when it's ready:
 ```bash
 make logs-vllm
 ```
@@ -101,6 +117,7 @@ Create Kubernetes secrets first:
 cd k8s/agent
 cp secret.yaml.example secret.yaml
 # Edit secret.yaml with your tokens
+cd ../..
 ```
 
 Then deploy:
@@ -112,6 +129,11 @@ This will:
 - Build the agent Docker image
 - Push to ECR
 - Deploy to Kubernetes
+
+Wait for it to start and become ready:
+```bash
+kubectl get pods -n agent -w
+```
 
 Check logs:
 ```bash
@@ -141,6 +163,12 @@ Run the LLM judge evaluation suite:
 > make portforward-mlflow  # Required for logging results
 > make portforward-vllm    # Required if using vLLM provider
 > ```
+
+Export your Logfire and GitHub token:
+```bash
+export LOGFIRE_TOKEN=""
+export GITHUB_TOKEN=""
+```
 
 Then, run:
 ```bash
@@ -195,7 +223,7 @@ make portforward-mlflow
 ### Agent Configuration
 
 Edit `src/config.yaml` to configure:
-- Model provider (anthropic, vllm, ollama)
+- Model provider (vllm, ollama)
 - Model parameters
 - MLflow settings
 
