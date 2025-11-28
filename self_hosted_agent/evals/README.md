@@ -1,1 +1,0 @@
-Export both github and anthropic key before running evals.
