@@ -35,7 +35,12 @@ helm upgrade --install mlflow \
   --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="$MLFLOW_S3_ROLE_ARN" \
   --set service.type=ClusterIP \
   --set service.port=5000 \
-
+  --set extraEnvVars.MLFLOW_HOST="0.0.0.0" \
+  --set extraEnvVars.MLFLOW_SERVER_ALLOWED_HOSTS="mlflow.mlflow.svc.cluster.local:5000" \
+  --set extraEnvVars.MLFLOW_GUNICORN_OPTS="--timeout 180" \
+  # The above extraEnvVars stuff are needed to allow mlflow to be accessed from the agent since mlflow version 3.5.0
+  # https://github.com/mlflow/mlflow/issues/16659
+  # You might want to take a more secure approach in production
 
 echo ""
 echo "MLflow installed successfully!"
