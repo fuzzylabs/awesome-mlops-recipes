@@ -27,7 +27,7 @@ This recipe cooks up a PR review agent running on Kubernetes, powered by vLLM fo
     └── mlflow/            # MLflow installation
 ```
 
-## Prerequisites
+## ✅ Prerequisites
 
 1. **Kubernetes cluster** (EKS with GPU nodes for vLLM)
 2. **AWS credentials** configured
@@ -35,7 +35,7 @@ This recipe cooks up a PR review agent running on Kubernetes, powered by vLLM fo
 4. **uv** - Python package manager ([installation guide](https://docs.astral.sh/uv/getting-started/installation/))
 5. **make** - Build automation tool (usually pre-installed on macOS/Linux)
 
-## Quick Start
+## 🚀 Quick Start
 
 ### 1. Deploy MLflow
 
@@ -67,7 +67,7 @@ Then, create the initial system prompt for your agent:
 make create-new-prompt
 ```
 
-This registers a new prompt in MLflow named `pr-review-agent-system-prompt`. You can customize the prompt template in [`prmopt_versioning/new.py`](prmopt_versioning/new.py).
+This registers a new prompt in MLflow named `pr-review-agent-system-prompt`. You can customise the prompt template in [`prmopt_versioning/new.py`](prmopt_versioning/new.py).
 
 To update the prompt later with a new version:
 ```bash
@@ -132,7 +132,7 @@ curl -X POST http://localhost:8080/review \
   -d '{"pr_title": "Add new feature"}'
 ```
 
-## Evaluation
+## 🎯 Evaluation
 
 Run the LLM judge evaluation suite:
 ```bash
@@ -141,7 +141,7 @@ make eval-review-quality
 
 Results are logged to MLflow for tracking prompt performance across versions.
 
-## Configuration
+## ⚙️ Configuration
 
 ### Agent Configuration
 
@@ -161,7 +161,7 @@ We wrote this recipe using the 4 billion parameter thinking version of Qwen3, bu
 **References:**
 - [Function Calling Leaderboard](https://huggingface.co/spaces/gorilla-llm/berkeley-function-calling-leaderboard)
 
-## Available Commands
+## 💻 Available Commands
 
 Run `make help` to see all commands, or use these common ones:
 
@@ -188,7 +188,7 @@ Run `make help` to see all commands, or use these common ones:
 - `make teardown-vllm` - Remove vLLM deployment
 - `make teardown-agent` - Remove agent deployment
 
-## Teardown
+## 🧹 Teardown
 
 To remove deployments:
 ```bash
