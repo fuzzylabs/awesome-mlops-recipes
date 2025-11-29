@@ -1,4 +1,4 @@
-.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-agent portforward-vllm portforward-agent portforward-mlflow eval-review-quality teardown-vllm teardown-agent logs-agent logs-vllm help
+.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-agent portforward-vllm portforward-agent portforward-mlflow eval-review-quality teardown-vllm teardown-agent logs-agent logs-vllm restart-agent wait-mlflow wait-vllm wait-agent status-mlflow status-vllm status-agent help
 
 # Deploy MLflow
 deploy-mlflow:
@@ -70,6 +70,37 @@ logs-vllm:
 	@echo "Streaming vLLM logs..."
 	kubectl logs -f deployment/qwen3 -n vllm
 
+# Restart deployments
+restart-agent:
+	@echo "Restarting agent deployment..."
+	kubectl rollout restart deployment pr-review-agent -n agent
+
+# Watch pod status
+wait-mlflow:
+	@echo "Watching MLflow pods..."
+	kubectl get pods -n mlflow -w
+
+wait-vllm:
+	@echo "Watching vLLM pods..."
+	kubectl get pods -n vllm -w
+
+wait-agent:
+	@echo "Watching agent pods..."
+	kubectl get pods -n agent -w
+
+# Check pod status
+status-mlflow:
+	@echo "MLflow pod status:"
+	kubectl get pods -n mlflow
+
+status-vllm:
+	@echo "vLLM pod status:"
+	kubectl get pods -n vllm
+
+status-agent:
+	@echo "Agent pod status:"
+	kubectl get pods -n agent
+
 # Help
 help:
 	@echo "Available targets:"
@@ -92,6 +123,15 @@ help:
 	@echo "Monitoring:"
 	@echo "  logs-vllm            - Stream vLLM logs"
 	@echo "  logs-agent           - Stream agent logs"
+	@echo "  status-mlflow        - Check MLflow pod status"
+	@echo "  status-vllm          - Check vLLM pod status"
+	@echo "  status-agent         - Check agent pod status"
+	@echo "  wait-mlflow          - Watch MLflow pods (blocking)"
+	@echo "  wait-vllm            - Watch vLLM pods (blocking)"
+	@echo "  wait-agent           - Watch agent pods (blocking)"
+	@echo ""
+	@echo "Management:"
+	@echo "  restart-agent        - Restart agent deployment"
 	@echo ""
 	@echo "Teardown:"
 	@echo "  teardown-vllm        - Remove vLLM deployment"

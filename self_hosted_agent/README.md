@@ -61,7 +61,7 @@ make deploy-mlflow
 
 Wait for the MLflow container to be ready:
 ```bash
-kubectl get pods -n mlflow -w
+make wait-mlflow
 ```
 
 ### 2. Register Your System Prompt
@@ -102,7 +102,7 @@ This will:
 
 Wait for it to start and become ready (~8 minutes):
 ```bash
-kubectl get pods -n vllm -w
+make wait-vllm
 ```
 
 Check logs to verify the model server is ready to take requests (~4 minutes). You should see the `/health` endpoint getting hit when it's ready:
@@ -132,7 +132,7 @@ This will:
 
 Wait for it to start and become ready:
 ```bash
-kubectl get pods -n agent -w
+make wait-agent
 ```
 
 Check logs:
@@ -202,12 +202,12 @@ Results are logged to MLflow, allowing you to compare performance across prompt 
 
 To use the **latest** prompt version in your deployed agent:
 ```bash
-kubectl rollout restart deployment pr-review-agent -n agent
+make restart-agent
 ```
 
 To use a **specific** prompt version, update `prompt_version` in `src/config.yaml` or `k8s/agent/configmap.yaml`, then:
 ```bash
-kubectl rollout restart deployment pr-review-agent -n agent
+make restart-agent
 ```
 
 ### Comparing Results
