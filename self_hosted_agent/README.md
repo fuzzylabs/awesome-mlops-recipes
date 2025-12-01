@@ -175,11 +175,14 @@ Run the LLM judge evaluation suite:
 > make portforward-vllm    # Required if using vLLM provider
 > ```
 
-Export your Logfire and GitHub token:
+Export your Logfire, GitHub, and Anthropic tokens:
 ```bash
 export LOGFIRE_TOKEN=""
 export GITHUB_TOKEN=""
+export ANTHROPIC_API_KEY=""
 ```
+
+The LLM judge model is currently set to Claude Sonnet 4.5, which requires an `ANTHROPIC_API_KEY`. You can change this to any model that suits your needs. For details on model selection, see the [LLM Judge documentation](https://ai.pydantic.dev/evals/evaluators/llm-judge/#model-selection).
 
 Then, run:
 ```bash
