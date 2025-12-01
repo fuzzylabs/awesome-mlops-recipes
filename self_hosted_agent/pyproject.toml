@@ -1,0 +1,17 @@
+[project]
+name = "self-hosted-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.122.0",
+    "mlflow>=3.6.0",
+    "pydantic-ai>=1.22.0",
+    "pydantic-evals[logfire]>=1.22.0",
+    "pyyaml>=6.0.3",
+    "uvicorn>=0.38.0",
+]
+
+[tool.uv]
+package = true

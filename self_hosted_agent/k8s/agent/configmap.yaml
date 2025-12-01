@@ -1,0 +1,17 @@
+# This will override the local config.yaml when running in K8s
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pr-review-agent-config
+  namespace: agent
+data:
+  config.yaml: |
+    model:
+      provider: "vllm"
+      vllm:
+        model_name: "Qwen/Qwen3-4B-Thinking-2507"
+        base_url: "http://qwen3.vllm.svc.cluster.local:8000/v1"
+    mlflow:
+      tracking_uri: "http://mlflow.mlflow.svc.cluster.local:5000"
+      prompt_name: "pr-review-agent-system-prompt"
+      prompt_version: ""

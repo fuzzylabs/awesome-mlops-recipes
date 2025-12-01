@@ -1,0 +1,24 @@
+# PR Review Agent Configuration
+# You can override this file with a ConfigMap in Kubernetes
+
+# Model Configuration
+model:
+  # Choose: 'vllm', or 'ollama'
+  provider: "ollama"
+  
+  # Ollama settings
+  ollama:
+    model_name: "Qwen/Qwen3-4B-Thinking-2507"
+    base_url: "http://localhost:8000/v1"
+  
+  # vLLM settings (self-hosted in Kubernetes)
+  vllm:
+    model_name: "Qwen/Qwen3-4B-Thinking-2507"
+    base_url: "http://localhost:8000/v1"
+
+# MLflow Configuration
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  prompt_name: "pr-review-agent-system-prompt"
+  # Leave empty for latest version
+  prompt_version: ""
