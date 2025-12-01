@@ -4,8 +4,6 @@ This recipe cooks up a PR review agent running on Kubernetes, powered by vLLM fo
 
 **Cook Time**: ~1 Hour
 
-> NOTE: The recipe does not include IaC (TODO, point people to one?).
-
 ## 🥗 Ingredients
 
 - **Agent Framework**: Pydantic AI
@@ -28,6 +26,19 @@ This recipe cooks up a PR review agent running on Kubernetes, powered by vLLM fo
 └── helm/                   # Helm charts
     └── mlflow/            # MLflow installation
 ```
+
+## ☁️ Infrastructure Requirements
+
+This recipe requires the following AWS resources:
+
+- **EKS Cluster** - Kubernetes cluster with one CPU node and one GPU node
+- **RDS PostgreSQL** - Managed database for MLflow tracking
+- **S3 Bucket** - Object storage for MLflow artifacts
+- **ECR Repositories** - Two container registries for Docker images (agent and vLLM)
+- **VPC** - Isolated network environment with public and private subnets
+- **IAM Roles** - Service roles for secure authentication
+
+💡 **Quick Setup**: We provide ready-to-use Infrastructure as Code using Pulumi: [awesome-mlops-recipes-iac](https://github.com/fuzzylabs/awesome-mlops-recipes-iac)
 
 ## ✅ Prerequisites
 
