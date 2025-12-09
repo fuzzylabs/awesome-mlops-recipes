@@ -281,6 +281,21 @@ def apply_diff(repo_path: Path, diff_path: Path) -> None:
     )
 
 
+def run_dvc_pull(repo_path: Path) -> None:
+    """Run `dvc pull` from the repository path, warning on failure."""
+    try:
+        subprocess.run(
+            ["dvc", "pull"],
+            check=True,
+            cwd=repo_path,
+        )
+        logger.info("DVC pull completed.")
+    except FileNotFoundError:
+        logger.warning("DVC is not installed or not on PATH; skipped dvc pull.")
+    except subprocess.CalledProcessError as exc:
+        logger.warning("DVC pull failed: %s", exc)
+
+
 def main() -> None:
     """Entry point for the CLI that restores an MLflow run's Git state."""
     args = parse_args()
@@ -313,6 +328,8 @@ def main() -> None:
             diff_path.unlink(missing_ok=True)
     else:
         logger.info("No diff artifact found; working tree restored to commit only.")
+
+    run_dvc_pull(repo_path)
 
     logger.info("Done. The working tree now reflects the run's state.")
 
