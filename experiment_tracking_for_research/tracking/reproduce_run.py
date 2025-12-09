@@ -183,33 +183,34 @@ def download_diff_artifact(
     client: MlflowClient,
     run_id: str,
     diff_pattern: str,
-) -> Path:
-    """Download the diff artifact for a run and return a local copy.
+) -> Path | None:
+    """Download the diff artifact for a run and return a local copy if present.
 
     Args:
         client (MlflowClient): MLflow client used for artifact downloads.
         run_id (str): Run identifier that owns the artifact.
         diff_pattern (str): Glob pattern used to locate the diff file.
 
-    Raises:
-        SystemExit: If the artifact cannot be downloaded or located.
+    Returns:
+        Path | None: Local path to the diff file, or None if not available.
     """
     with tempfile.TemporaryDirectory(prefix="mlflow_git_info_") as tmp_dir:
         try:
-            local_git_info = Path(
-                client.download_artifacts(run_id, "git_info", tmp_dir)
+            local_git_info = Path(client.download_artifacts(run_id, "git_info", tmp_dir))
+        except Exception:
+            logger.warning(
+                "No git_info artifacts found for run %s. Skipping diff application.",
+                run_id,
             )
-        except Exception as exc:  # noqa: BLE001
-            raise SystemExit(
-                "Error: Failed to download git_info artifacts for the run. "
-                "Ensure the run logged 'git_info/tmp*.diff'."
-            ) from exc
+            return None
 
         matches = sorted(local_git_info.glob(diff_pattern))
         if not matches:
-            raise SystemExit(
-                f"Error: No diff matching pattern '{diff_pattern}' found under git_info/."
+            logger.warning(
+                "No diff matching pattern '%s' found under git_info/. Skipping diff application.",
+                diff_pattern,
             )
+            return None
 
         # Copy the diff to a stable temp file outside the context manager scope.
         fd, path = tempfile.mkstemp(prefix="mlflow_diff_", suffix=".diff")
@@ -304,11 +305,14 @@ def main() -> None:
     logger.info(f"Restoring working tree to commit {commit_hash}...")
     restore_to_commit(repo_path, commit_hash)
 
-    logger.info(f"Applying diff from {diff_path}...")
-    try:
-        apply_diff(repo_path, diff_path)
-    finally:
-        diff_path.unlink(missing_ok=True)
+    if diff_path:
+        logger.info(f"Applying diff from {diff_path}...")
+        try:
+            apply_diff(repo_path, diff_path)
+        finally:
+            diff_path.unlink(missing_ok=True)
+    else:
+        logger.info("No diff artifact found; working tree restored to commit only.")
 
     logger.info("Done. The working tree now reflects the run's state.")
 
