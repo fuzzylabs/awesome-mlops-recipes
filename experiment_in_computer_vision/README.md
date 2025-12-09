@@ -64,8 +64,12 @@ mlflow server --app-name basic-auth --backend-store-uri sqlite:///mlflow.db --po
 5) Point ZenML at MLflow
 
 ```bash
-zenml login
+source .venv/bin/activate
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES # This is requried if you are on a Mac
+zenml login --local
+```
 
+```bash
 zenml experiment-tracker register mlflow_experiment_tracker \
     --flavor=mlflow \
     --tracking_uri=http://localhost:5000 \
@@ -116,6 +120,8 @@ python run.py
 ## 🔁 Reproducing an old experiment
 
 Use the reproduce command saved with the MLflow run (captures exact code and data). After running it:
+
+![mlflow](imgs/mlflow.png)
 
 ```bash
 python run.py
