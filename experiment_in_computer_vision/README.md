@@ -6,12 +6,12 @@ Frictionless experiment tracking for computer‑vision research with DVC, MLflow
 
 ## 🥗 Ingredients
 
-- Data versioning: [DVC](https://dvc.org/)
-- Experiment tracking: [MLflow](https://mlflow.org/)
-- Pipeline orchestrator: [ZenML](https://www.zenml.io/)
-- Code versioning: Git
+- **Data versioning**: [DVC](https://dvc.org/)
+- **Experiment tracking**: [MLflow](https://mlflow.org/)
+- **Pipeline orchestrator**: [ZenML](https://www.zenml.io/)
+- **Code versioning**: Git
 
-## 🗄️ Project Structure (essentials)
+## 🗄️ Project Structure
 
 ```
 .
