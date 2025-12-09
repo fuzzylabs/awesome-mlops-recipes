@@ -226,3 +226,7 @@ mlartifacts/
 
 # ZenML
 .zen/
+/data
+
+# MacOS
+.DS_Store
