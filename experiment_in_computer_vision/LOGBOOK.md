@@ -1,3 +1,3 @@
 # CNN Experiment
 
-First data version. 321312
+First data version.

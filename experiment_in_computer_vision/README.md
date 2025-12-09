@@ -2,7 +2,7 @@
 
 Frictionless experiment tracking for computer‑vision research with DVC, MLflow, and ZenML. Ready to adapt to your own datasets and models.
 
-**Cook Time:** ~1 hour
+**Cook Time:** ~30 minutes
 
 ## 🥗 Ingredients
 
@@ -87,6 +87,8 @@ zenml stack register \
 ```bash
 python run.py
 ```
+
+You should see an experiment run on the MLflow dashboard.
 
 ## 🎨 Iterating with RGB data
 
