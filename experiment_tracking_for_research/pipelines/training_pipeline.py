@@ -17,7 +17,7 @@ def training_pipeline(
 ):
     """Run the training workflow end-to-end."""
     train_features, train_labels, test_features, test_labels = load_data_step(
-        data_dir=data_dir
+        data_dir=data_dir,
     )
     model, metrics = train_step(
         train_features=train_features,

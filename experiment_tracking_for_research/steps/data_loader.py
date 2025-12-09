@@ -29,12 +29,12 @@ def _load_split(data_dir: str, split: str) -> tuple[np.ndarray, np.ndarray]:
             f for f in character_dir.iterdir() if f.name.endswith((".png", ".jpg"))
         ]
         for file in image_files:
-            img = Image.open(file).convert("L")
+            img = Image.open(file).convert("RGB")
             img = img.resize((28, 28), Image.LANCZOS)
             transform = transforms.Compose(
                 [
                     transforms.ToTensor(),
-                    transforms.Normalize((0.5,), (0.5,)),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 ]
             )
             images.append(transform(img))
@@ -49,7 +49,9 @@ def _load_split(data_dir: str, split: str) -> tuple[np.ndarray, np.ndarray]:
 
 
 @step(enable_cache=False)
-def load_data_step(data_dir: str = "./data") -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def load_data_step(
+    data_dir: str = "./data",
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Load train and test splits; fallback to dummy data if needed."""
     try:
         train_features, train_labels = _load_split(data_dir, "train")
@@ -57,9 +59,9 @@ def load_data_step(data_dir: str = "./data") -> tuple[np.ndarray, np.ndarray, np
         logger.info("Loaded %s train samples and %s test samples", len(train_labels), len(test_labels))
     except Exception as exc:  # noqa: BLE001
         logger.warning("Falling back to dummy data: %s", exc)
-        train_features = torch.randn(1000, 1, 28, 28).numpy()
+        train_features = torch.randn(1000, 3, 28, 28).numpy()
         train_labels = torch.randint(0, 10, (1000,)).numpy()
-        test_features = torch.randn(200, 1, 28, 28).numpy()
+        test_features = torch.randn(200, 3, 28, 28).numpy()
         test_labels = torch.randint(0, 10, (200,)).numpy()
 
     return train_features, train_labels, test_features, test_labels
