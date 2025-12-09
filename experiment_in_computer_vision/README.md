@@ -1,8 +1,41 @@
 # Experiment In Computer Vision
 
-This recipe demonstrates how to remove friction from computer vision experiment tracking
+This recipe gives you a runnable example of frictionless experiment tracking for computer‑vision research, ready to adapt to your own models and datasets.
 
+**Cook Time**: ~1 Hour
 
+## 🥗 Ingredients
+
+- **Data Versioning**: DVC
+- **Experiment Tracking**: MLFlow
+- **Pipeline Orchestrator**: ZenML
+- **Code Verisoning**: Git
+
+## 🗄️ Project Structure
+
+## 🚀 Quick Start
+
+### 1. Start MLFlow
+
+```bash
+mlflow server --app-name basic-auth --backend-store-uri sqlite:///mlflow.db --port 5000
+```
+
+### 2. Set up DVC & Version Our Data
+
+THe dataset we are using in this recipe is the [Simpsons-MNIST](https://github.com/alvarobartt/simpsons-mnist). You can use whatever dataset you want.
+
+If you are sticking with [Simpsons-MNIST](https://github.com/alvarobartt/simpsons-mnist), there are two dataset which you will find, grayscale and rgb.
+
+```bash
+
+```
+
+### 3. Start ZenML
+
+### 3. Make some changes
+
+### 4. Reproduce the run
 
 Update code:
 
