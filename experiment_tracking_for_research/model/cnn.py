@@ -3,46 +3,6 @@
 from torch import nn
 
 
-class MLP(nn.Module):
-    """Multi-layer perceptron for image classification.
-
-    A simple feedforward neural network with one hidden layer that
-    automatically handles both flattened inputs and 2D image inputs.
-
-    Args:
-        input_size (int): Size of the input features (default: 784 for 28x28 images).
-        hidden_size (int): Size of the hidden layer (default: 100).
-        output_size (int): Number of output classes (default: 10).
-    """
-    def __init__(self, input_size=784, hidden_size=100, output_size=10):
-        super(MLP, self).__init__()
-        self.input_size = input_size
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, output_size)
-
-    def forward(self, x):
-        """Forward pass of the MLP.
-
-        Handles both flattened inputs [batch_size, 784] and
-        image inputs [batch_size, 1, 28, 28].
-
-        Args:
-            x (torch.Tensor): Input tensor.
-
-        Returns:
-            torch.Tensor: Output predictions.
-        """
-        if x.dim() > 2:
-            batch_size = x.size(0)
-            x = x.view(batch_size, -1)
-
-        x = self.fc1(x)
-        x = self.relu(x)
-        x = self.fc2(x)
-        return x
-
-
 class CNN(nn.Module):
     """Convolutional neural network for image classification.
 
