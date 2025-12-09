@@ -804,7 +804,7 @@ wheels = [
 ]
 
 [[package]]
-name = "experiment-tracking-for-research"
+name = "experiment-in-computer-vision"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

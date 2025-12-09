@@ -42,12 +42,6 @@ source .venv/bin/activate
 make get-grayscale-data
 ```
 
-Optional: tidy up the temp checkout
-
-```bash
-make clean-data
-```
-
 3) Version the data with DVC (run here; `--subdir` because the repo root is git-tracked)
 
 ```bash
