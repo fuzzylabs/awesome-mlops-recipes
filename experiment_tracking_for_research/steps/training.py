@@ -67,7 +67,9 @@ def train_step(
 
     log_model_architecture(model)
     log_git_info()
-    mlflow.log_text(get_logbook(), "logbook.md")
+    logbook_text = get_logbook()
+    mlflow.log_text(logbook_text, "logbook.md")
+    mlflow.set_tag("mlflow.note.content", logbook_text)
 
     active_run = mlflow.active_run()
     if active_run:
