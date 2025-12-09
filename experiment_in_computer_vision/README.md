@@ -1,110 +1,136 @@
-# Experiment In Computer Vision
+# 🖼️ Experiment In Computer Vision
 
-This recipe gives you a runnable example of frictionless experiment tracking for computer‑vision research, ready to adapt to your own models and datasets.
+Frictionless experiment tracking for computer‑vision research with DVC, MLflow, and ZenML. Ready to adapt to your own datasets and models.
 
-**Cook Time**: ~1 Hour
+**Cook Time:** ~1 hour
 
 ## 🥗 Ingredients
 
-- **Data Versioning**: DVC
-- **Experiment Tracking**: MLFlow
-- **Pipeline Orchestrator**: ZenML
-- **Code Verisoning**: Git
+- Data versioning: [DVC](https://dvc.org/)
+- Experiment tracking: [MLflow](https://mlflow.org/)
+- Pipeline orchestrator: [ZenML](https://www.zenml.io/)
+- Code versioning: Git
 
-## 🗄️ Project Structure
+## 🗄️ Project Structure (essentials)
+
+```
+.
+├── run.py               # Entry point to train/evaluate
+├── steps/               # ZenML steps (data loading, training, eval)
+├── pipelines/           # Pipeline definitions
+├── model/               # Model code (e.g., CNN)
+├── data/                # Created by make targets (train/test, rgb/grayscale)
+└── Makefile             # Dataset fetch helpers
+```
+
+## ✅ Prerequisites
+
+- Python 3.13+ with `uv` and `make`
 
 ## 🚀 Quick Start
 
-### 1. Start MLFlow
+1) Install deps and activate the venv
+
+```bash
+uv sync
+source .venv/bin/activate
+```
+
+2) Fetch grayscale Simpsons-MNIST (sparse checkout into `data/train` and `data/test`)
+
+```bash
+make get-grayscale-data
+```
+
+Optional: tidy up the temp checkout
+
+```bash
+make clean-data
+```
+
+3) Version the data with DVC (run here; `--subdir` because the repo root is git-tracked)
+
+```bash
+dvc init --subdir
+dvc remote add -d myremote /tmp/dvcstore   # swap for S3/Blob as needed
+dvc add data
+dvc push
+
+git add .
+git commit -m "Add first version of data"
+git push
+```
+
+4) Start MLflow
 
 ```bash
 mlflow server --app-name basic-auth --backend-store-uri sqlite:///mlflow.db --port 5000
 ```
 
-### 2. Set up DVC & Version Our Data
-
-THe dataset we are using in this recipe is the [Simpsons-MNIST](https://github.com/alvarobartt/simpsons-mnist). You can use whatever dataset you want.
-
-If you are sticking with [Simpsons-MNIST](https://github.com/alvarobartt/simpsons-mnist), there are two dataset which you will find, grayscale and rgb.
+5) Point ZenML at MLflow
 
 ```bash
+zenml login
 
+zenml experiment-tracker register mlflow_experiment_tracker \
+    --flavor=mlflow \
+    --tracking_uri=http://localhost:5000 \
+    --tracking_username="admin" --tracking_password="password1234"
+
+zenml stack register \
+    -e mlflow_experiment_tracker experiment-computer-vision \
+    -a default \
+    -o default \
+    --set
 ```
 
-### 3. Start ZenML
+6) Run an experiment
 
-### 3. Make some changes
-
-### 4. Reproduce the run
-
-Update code:
-
-```python
-"""Data loading step for the ZenML pipeline."""
-
-import numpy as np
-import torch
-from PIL import Image
-from torchvision import transforms
-from zenml import step
-from zenml.logger import get_logger
-from pathlib import Path
-
-logger = get_logger(__name__)
-
-
-def _load_split(data_dir: str, split: str) -> tuple[np.ndarray, np.ndarray]:
-    """Load a dataset split (train/test) from disk."""
-    images = []
-    labels = []
-    label_map: dict[str, int] = {}
-
-    split_path = Path(data_dir) / split
-    if not split_path.exists():
-        raise ValueError(f"Split directory not found: {split_path}")
-
-    characters = sorted([d for d in split_path.iterdir() if d.is_dir()])
-
-    for idx, character_dir in enumerate(characters):
-        label_map[character_dir.name] = idx
-        image_files = [
-            f for f in character_dir.iterdir() if f.name.endswith((".png", ".jpg"))
-        ]
-        for file in image_files:
-            img = Image.open(file).convert("RGB")
-            img = img.resize((28, 28), Image.LANCZOS)
-            transform = transforms.Compose(
-                [
-                    transforms.ToTensor(),
-                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                ]
-            )
-            images.append(transform(img))
-            labels.append(label_map[character_dir.name])
-
-    if not images:
-        raise ValueError(f"No images found under {split_path}")
-
-    X = torch.stack(images).numpy()
-    y = torch.tensor(labels, dtype=torch.long).numpy()
-    return X, y
-
-
-@step(enable_cache=False)
-def load_data_step(
-    data_dir: str = "./data",
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Load train and test splits; fallback to dummy data if needed."""
-    try:
-        train_features, train_labels = _load_split(data_dir, "train")
-        test_features, test_labels = _load_split(data_dir, "test")
-        logger.info("Loaded %s train samples and %s test samples", len(train_labels), len(test_labels))
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Falling back to dummy data: %s", exc)
-        train_features = torch.randn(1000, 3, 28, 28).numpy()
-        train_labels = torch.randint(0, 10, (1000,)).numpy()
-        test_features = torch.randn(200, 3, 28, 28).numpy()
-        test_labels = torch.randint(0, 10, (200,)).numpy()
-
-    return train_features, train_labels, test_features, test_labels
+```bash
+python run.py
 ```
+
+## 🎨 Iterating with RGB data
+
+1) Pull RGB data (lands in `data/rgb-train` and `data/rgb-test`)
+
+```bash
+make get-rgb-data
+```
+
+2) Switch the data loader to RGB in `steps/data_loader.py` (use `Image.convert("RGB")` and 3-channel normalisation)
+
+3) Log changes in `LOGBOOK.md` (e.g., model tweaks, dataset versions)
+
+4) Version and push the new data
+
+```bash
+dvc add data
+dvc push
+
+git add .
+git commit -m "New data version, RGB images"
+git push
+```
+
+5) Run again and compare in MLflow
+
+```bash
+python run.py
+```
+
+## 🔁 Reproducing an old experiment
+
+Use the reproduce command saved with the MLflow run (captures exact code and data). After running it:
+
+```bash
+python run.py
+```
+
+to rerun with the recovered state.
+
+## 💻 Helpful Make targets
+
+- `make get-grayscale-data` — fetch grayscale train/test via sparse checkout
+- `make get-rgb-data` — fetch RGB train/test via sparse checkout
+- `make clean-data` — remove the temporary sparse checkout directory

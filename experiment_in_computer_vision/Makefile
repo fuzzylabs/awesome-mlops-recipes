@@ -1,39 +1,44 @@
-.PHONY: download-data clean-data
+.PHONY: get-grayscale-data get-rgb-data clean-data
 
 DATA_DIR := data
-TRAIN_ZIP := $(DATA_DIR)/grayscale-train.zip
-TEST_ZIP := $(DATA_DIR)/grayscale-test.zip
 TRAIN_DIR := $(DATA_DIR)/train
 TEST_DIR := $(DATA_DIR)/test
-GRAYSCALE_TRAIN_URL := https://raw.githubusercontent.com/alvarobartt/simpsons-mnist/master/dataset/grayscale-train.zip
-GRAYSCALE_TEST_URL := https://raw.githubusercontent.com/alvarobartt/simpsons-mnist/master/dataset/grayscale-test.zip
 
-# Default target to fetch and unpack the grayscale dataset splits
-download-data: $(TRAIN_DIR) $(TEST_DIR)
+RGB_TRAIN_DIR := $(DATA_DIR)/rgb-train
+RGB_TEST_DIR := $(DATA_DIR)/rgb-test
 
-$(TRAIN_ZIP):
+TMP_DIR := $(DATA_DIR)/.simpsons-tmp
+REPO := https://github.com/alvarobartt/simpsons-mnist.git
+
+# Grayscale
+get-grayscale-data: $(TRAIN_DIR) $(TEST_DIR) clean-data
+
+$(TMP_DIR):
+	rm -rf $(TMP_DIR)
+	git clone --filter=blob:none --sparse $(REPO) $(TMP_DIR)
+
+$(TRAIN_DIR): $(TMP_DIR)
+	cd $(TMP_DIR) && git sparse-checkout set dataset/grayscale/train dataset/grayscale/test
 	mkdir -p $(DATA_DIR)
-	curl -L -o $@ $(GRAYSCALE_TRAIN_URL)
+	cp -R $(TMP_DIR)/dataset/grayscale/train $(TRAIN_DIR)
 
-$(TEST_ZIP):
+$(TEST_DIR): $(TMP_DIR)
+	cd $(TMP_DIR) && git sparse-checkout set dataset/grayscale/train dataset/grayscale/test
 	mkdir -p $(DATA_DIR)
-	curl -L -o $@ $(GRAYSCALE_TEST_URL)
+	cp -R $(TMP_DIR)/dataset/grayscale/test $(TEST_DIR)
 
-# Extract the grayscale training split into data/train
-$(TRAIN_DIR): $(TRAIN_ZIP)
-	unzip -q -o $< -d $(DATA_DIR)
-	@if [ -d $(DATA_DIR)/grayscale-train ]; then mv $(DATA_DIR)/grayscale-train $@; fi
-	@if [ -d $(DATA_DIR)/grayscale/train ]; then mv $(DATA_DIR)/grayscale/train $@; fi
-	@if [ -d $(DATA_DIR)/train ] && [ ! -d $@ ]; then mv $(DATA_DIR)/train $@; fi
+# RGB
+get-rgb-data: $(RGB_TRAIN_DIR) $(RGB_TEST_DIR) clean-data
 
-# Extract the grayscale test split into data/test
-$(TEST_DIR): $(TEST_ZIP)
-	unzip -q -o $< -d $(DATA_DIR)
-	@if [ -d $(DATA_DIR)/grayscale-test ]; then mv $(DATA_DIR)/grayscale-test $@; fi
-	@if [ -d $(DATA_DIR)/grayscale/test ]; then mv $(DATA_DIR)/grayscale/test $@; fi
-	@if [ -d $(DATA_DIR)/test ] && [ ! -d $@ ]; then mv $(DATA_DIR)/test $@; fi
+$(RGB_TRAIN_DIR): $(TMP_DIR)
+	cd $(TMP_DIR) && git sparse-checkout set dataset/rgb/train dataset/rgb/test
+	mkdir -p $(DATA_DIR)
+	cp -R $(TMP_DIR)/dataset/rgb/train $(RGB_TRAIN_DIR)
 
-# Remove downloaded archives and extracted splits
+$(RGB_TEST_DIR): $(TMP_DIR)
+	cd $(TMP_DIR) && git sparse-checkout set dataset/rgb/train dataset/rgb/test
+	mkdir -p $(DATA_DIR)
+	cp -R $(TMP_DIR)/dataset/rgb/test $(RGB_TEST_DIR)
+
 clean-data:
-	rm -rf $(TRAIN_DIR) $(TEST_DIR) $(TRAIN_ZIP) $(TEST_ZIP)
-
+	rm -rf $(TMP_DIR)
