@@ -69,4 +69,4 @@ python run.py --optuna-trials 10
 ```
 The above commands will carry out 10 optuna trails based on objective defined in [run.py](run.py#83)
 
-> Note: Optuna can also perform grid search which would search every single combination of your provided paramater instead of ramdomly sampling a number of combvinations.
+> Note: Optuna can also run a full grid search, which tries every possible combination of your parameters instead of sampling them randomly.
