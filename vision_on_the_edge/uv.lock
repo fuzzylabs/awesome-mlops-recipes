@@ -164,6 +164,24 @@ wheels = [
 ]
 
 [[package]]
+name = "brevitas"
+version = "0.10.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dependencies" },
+    { name = "packaging" },
+    { name = "setuptools" },
+    { name = "sympy" },
+    { name = "torch" },
+    { name = "typing-extensions" },
+    { name = "unfoldnd" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/96/c8/73ddf09c4d7475137470aee37d2424f8af45c33d3f58c13b7f6480ec4b67/brevitas-0.10.2.tar.gz", hash = "sha256:e49c2f1fdd9e69ecdf82bb0f6d205f6100966a8e99fa1e1b345a51acaeafe9bd", size = 518840, upload-time = "2024-02-19T16:42:42.624Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/df/f2964ce9f27b9699a65c9f93900a45c0c5be65a97588c86fb16a6736159e/brevitas-0.10.2-py3-none-any.whl", hash = "sha256:3488129e40496034b406b90ab2f15484527854ed4cecd79d4c07849e8caff1e0", size = 626551, upload-time = "2024-02-19T16:42:40.018Z" },
+]
+
+[[package]]
 name = "cachetools"
 version = "6.2.2"
 source = { registry = "https://pypi.org/simple" }
@@ -363,6 +381,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0a/6e/1c8331ddf91ca4730ab3086a0f1be19c65510a33b5a441cb334e7a2d2560/cryptography-46.0.3-cp38-abi3-win32.whl", hash = "sha256:6276eb85ef938dc035d59b87c8a7dc559a232f954962520137529d77b18ff1df", size = 3036695, upload-time = "2025-10-15T23:18:08.672Z" },
     { url = "https://files.pythonhosted.org/packages/90/45/b0d691df20633eff80955a0fc7695ff9051ffce8b69741444bd9ed7bd0db/cryptography-46.0.3-cp38-abi3-win_amd64.whl", hash = "sha256:416260257577718c05135c55958b674000baef9a1c7d9e8f306ec60d71db850f", size = 3501720, upload-time = "2025-10-15T23:18:10.632Z" },
     { url = "https://files.pythonhosted.org/packages/e8/cb/2da4cc83f5edb9c3257d09e1e7ab7b23f049c7962cae8d842bbef0a9cec9/cryptography-46.0.3-cp38-abi3-win_arm64.whl", hash = "sha256:d89c3468de4cdc4f08a57e214384d0471911a3830fcdaf7a8cc587e42a866372", size = 2918740, upload-time = "2025-10-15T23:18:12.277Z" },
+]
+
+[[package]]
+name = "dependencies"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/c8/8d296cc25e199183233f7eb79d8bd80598484491b7200d0a5407af285000/dependencies-2.0.1.tar.gz", hash = "sha256:89f8262059ee6fb7a27f12bc72cec41e4a954a7b6f5ba0b4c902be1495e1cd12", size = 10320, upload-time = "2020-07-16T12:58:56.48Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a6/b7/d07e44c49429eba1c2eeffbde551a9ea3838c5ab34fafd544999fd4f925e/dependencies-2.0.1-py2.py3-none-any.whl", hash = "sha256:4f2acdafd3f17f20b717e0691f5652d01bb1099f9d851926e7d2913bff299c61", size = 15330, upload-time = "2020-07-16T12:58:55.563Z" },
 ]
 
 [[package]]
@@ -1683,6 +1710,20 @@ wheels = [
 ]
 
 [[package]]
+name = "unfoldnd"
+version = "0.2.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/12/59/c7b37eb01a339900eedce92947ab43da467f910e3e18d796096dac9b6097/unfoldnd-0.2.3.tar.gz", hash = "sha256:f5b5121d05dafdd70e873ac64a3ecdadfc4c0e8840a0facc86986ede664ab188", size = 18699, upload-time = "2024-12-30T19:43:26.643Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/34/0a/2220291f3a9cafdfd52a7fc42ba012fce9e8ae3d89ee726ad27188d5d63a/unfoldNd-0.2.3-py3-none-any.whl", hash = "sha256:62e9cc35b152b916204b900a3989f3637baf7bd359fdfe32295e817e3b81229c", size = 16822, upload-time = "2024-12-30T19:43:24.82Z" },
+]
+
+[[package]]
 name = "urllib3"
 version = "2.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1746,6 +1787,7 @@ name = "vision-on-the-edge"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "brevitas" },
     { name = "optuna" },
     { name = "torch" },
     { name = "torchao" },
@@ -1755,6 +1797,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "brevitas", specifier = ">=0.10.2" },
     { name = "optuna", specifier = ">=4.6.0" },
     { name = "torch", specifier = ">=2.9.1" },
     { name = "torchao", specifier = ">=0.14.1" },
