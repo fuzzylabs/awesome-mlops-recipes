@@ -19,7 +19,6 @@ This recipe gives you a concrete, reusable starting point for any project where 
 ├── pipelines/      # ZenML pipeline wiring
 ├── steps/          # Data, train, eval steps
 ├── mobilenetv2.py  # Quantiseable MobileNetV2
-├── quantisation.py # Quantisation helpers
 └── data/           # MNIST cache (downloaded on first run)
 ```
 
