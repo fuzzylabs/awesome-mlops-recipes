@@ -17,10 +17,12 @@ def train_step(
     train_dataloader: DataLoader,
     lr: float,
     num_epochs: int,
+    bit_w: int = 8,
+    bit_a: int = 8,
 ) -> nn.Module:
     """Train the model."""
 
-    model = QuantMobileNetV2(num_classes=10, bit_w=8, bit_a=8).to(device)
+    model = QuantMobileNetV2(num_classes=10, bit_w=bit_w, bit_a=bit_a).to(device)
 
     loss_fn = nn.CrossEntropyLoss()
     optimiser = optim.Adam(model.parameters(), lr=lr)

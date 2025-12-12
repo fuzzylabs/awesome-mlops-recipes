@@ -17,6 +17,8 @@ def training_pipeline(
     num_epochs: int = 10,
     batch_size: int = 64,
     learning_rate: float = 0.001,
+    bit_w: int = 8,
+    bit_a: int = 8,
 ):
     """Run the training workflow end-to-end."""
     if device == "auto":
@@ -38,6 +40,8 @@ def training_pipeline(
         train_dataloader=train_dataloader,
         lr=learning_rate,
         num_epochs=num_epochs,
+        bit_w=bit_w,
+        bit_a=bit_a,
     )
 
     metrics = evaluate_step(
