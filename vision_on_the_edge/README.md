@@ -6,9 +6,9 @@ This recipe gives you a concrete, reusable starting point for any project where 
 
 ## 🥗 Ingredients
 
-- **Optuna**: [Optuna](https://optuna.org/)
-- **Pyotrch**: [Pytorch](https://github.com/pytorch/pytorch)
-- **Brevitas** : [Brevitas](https://xilinx.github.io/brevitas/v0.12.1/)
+- **Hyperparameter optimisation framework**: [Optuna](https://optuna.org/)
+- **Deep learning framework**: [Pytorch](https://github.com/pytorch/pytorch)
+- **Quantisation aware training**: [Brevitas](https://xilinx.github.io/brevitas/v0.12.1/)
 - **Experiment tracking**: [MLflow](https://mlflow.org/)
 - **Pipeline orchestrator**: [ZenML](https://www.zenml.io/)
 
