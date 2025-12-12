@@ -2,7 +2,7 @@
 
 This recipe gives you a concrete, reusable starting point for any project where a vision model needs to live out in the wild.
 
-**Cook Time:** ~30 minutes (Highly depeneds on the GPU you have, it'd be painfully slow on CPU.)
+**Cook Time:** ~30 minutes (depends heavily on your GPU; running this on a CPU will be very slow)
 
 ## 🥗 Ingredients
 
