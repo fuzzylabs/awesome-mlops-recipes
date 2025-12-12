@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 @pipeline
 def training_pipeline(
-    device: str = "cpu",
+    device: str = "auto",
     num_epochs: int = 10,
     batch_size: int = 64,
     learning_rate: float = 0.001,
@@ -21,11 +21,9 @@ def training_pipeline(
     bit_a: int = 8,
 ):
     """Run the training workflow end-to-end."""
-    if device == "auto":
+    if device == "auto": # No mps support with Brevitas
         if torch.cuda.is_available():
             device = "cuda"
-        elif torch.backends.mps.is_available():
-            device = "mps"
         else:
             device = "cpu"
 

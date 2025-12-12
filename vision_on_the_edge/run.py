@@ -24,6 +24,18 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Number of Optuna trials to run. Set to 0 to skip hyperparameter search.",
     )
+    parser.add_argument(
+        "--alpha-latency",
+        type=float,
+        default=0.05,
+        help="Penalty weight per millisecond of latency when computing the Optuna score.",
+    )
+    parser.add_argument(
+        "--beta-size",
+        type=float,
+        default=0.2,
+        help="Penalty weight per MB of model size when computing the Optuna score.",
+    )
     return parser.parse_args()
 
 
@@ -50,7 +62,12 @@ def objective(trial: optuna.Trial, args: argparse.Namespace) -> float:
     bit_a = trial.suggest_categorical("bit_a", [2, 4, 6, 8])
 
     metrics = run_single_training(args=args, bit_w=bit_w, bit_a=bit_a)
-    return float(metrics.get("overall_accuracy", 0.0))
+    accuracy = float(metrics.get("overall_accuracy", 0.0))
+    latency = float(metrics.get("latency_ms", 0.0))
+    size_mb = float(metrics.get("model_size_mb", 0.0))
+    score = accuracy - args.alpha_latency * latency - args.beta_size * size_mb
+
+    return score
 
 
 def main() -> None:
@@ -61,11 +78,16 @@ def main() -> None:
         study = optuna.create_study(direction="maximize")
         study.optimize(partial(objective, args=args), n_trials=args.optuna_trials)
 
-        print(f"Best trial accuracy: {study.best_trial.value:.2f}")
+        print(f"Best trial score: {study.best_trial.value:.2f}")
         print(f"Best params: {study.best_trial.params}")
     else:
         metrics = run_single_training(args=args, bit_w=args.bit_w, bit_a=args.bit_a)
+        accuracy = float(metrics.get("overall_accuracy", 0.0))
+        latency = float(metrics.get("latency_ms", 0.0))
+        size_mb = float(metrics.get("model_size_mb", 0.0))
+        score = accuracy - args.alpha_latency * latency - args.beta_size * size_mb
         print(f"Metrics: {metrics}")
+        print(f"Score (accuracy - alpha*latency - beta*size): {score:.2f}")
 
 
 if __name__ == "__main__":
