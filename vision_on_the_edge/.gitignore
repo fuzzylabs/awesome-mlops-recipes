@@ -220,3 +220,16 @@ data/
 
 # checkpoints
 *.pt
+
+# Mlflow
+mlflow.db
+mlruns/
+basic_auth.db
+mlartifacts/
+
+# ZenML
+.zen/
+/data
+
+# MacOS
+*.DS_Store

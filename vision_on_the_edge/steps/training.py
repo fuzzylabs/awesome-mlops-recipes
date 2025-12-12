@@ -4,7 +4,7 @@ from zenml import step
 from zenml.logger import get_logger
 from torch import nn, optim
 from torch.utils.data import DataLoader
-from model import mobilenet_v2
+import torch
 from mobilenetv2 import QuantMobileNetV2
 from zenml.integrations.constants import PYTORCH
 
@@ -17,10 +17,10 @@ def train_step(
     train_dataloader: DataLoader,
     lr: float,
     num_epochs: int,
-    bit_w: int = 8,
-    bit_a: int = 8,
-) -> nn.Module:
-    """Train the model."""
+    bit_w: int,
+    bit_a: int,
+) -> dict[str, torch.Tensor]:
+    """Train the model and return its state dict."""
 
     model = QuantMobileNetV2(num_classes=10, bit_w=bit_w, bit_a=bit_a).to(device)
 
@@ -52,4 +52,6 @@ def train_step(
                     f"Loss: {loss.item():.4f}"
                 )
 
-    return model
+    # Move to CPU before returning to avoid device-specific serialization issues
+    model = model.cpu()
+    return model.state_dict()

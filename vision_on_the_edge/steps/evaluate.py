@@ -5,29 +5,36 @@ import time
 from zenml import step
 from zenml.logger import get_logger
 import torch
-from torch import nn
 from torch.utils.data import DataLoader
+from mobilenetv2 import QuantMobileNetV2
+
 
 logger = get_logger(__name__)
 
 
 @step(enable_cache=False)
 def evaluate_step(
-    model: nn.Module,
+    state_dict: dict[str, torch.Tensor],
     test_dataloader: DataLoader,
     device: str,
-):
+    bit_w: int,
+    bit_a: int,
+) -> dict[str, float]:
     """Evaluate the model on test data.
 
     Args:
-        model: The trained neural network model.
+        state_dict: The trained model weights.
         test_dataloader: DataLoader for test data.
         device: Device to evaluate on ('auto', 'cpu', 'cuda').
+        bit_w: Weight quantization bits used for reconstruction.
+        bit_a: Activation quantization bits used for reconstruction.
 
     Returns:
         Dictionary containing evaluation metrics.
     """
-    # Setup device
+    # Rebuild and setup device
+    model = QuantMobileNetV2(num_classes=10, bit_w=bit_w, bit_a=bit_a)
+    model.load_state_dict(state_dict)
     model.to(device)
     model.eval()
 

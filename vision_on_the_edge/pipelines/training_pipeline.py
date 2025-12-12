@@ -13,12 +13,12 @@ logger = get_logger(__name__)
 
 @pipeline
 def training_pipeline(
+    bit_w: int,
+    bit_a: int,
     device: str = "auto",
     num_epochs: int = 10,
     batch_size: int = 64,
     learning_rate: float = 0.001,
-    bit_w: int = 8,
-    bit_a: int = 8,
 ):
     """Run the training workflow end-to-end."""
     if device == "auto": # No mps support with Brevitas
@@ -33,7 +33,7 @@ def training_pipeline(
         batch_size=batch_size,
     )
     
-    model = train_step(
+    state_dict = train_step(
         device=device,
         train_dataloader=train_dataloader,
         lr=learning_rate,
@@ -43,9 +43,11 @@ def training_pipeline(
     )
 
     metrics = evaluate_step(
-        model=model,
+        state_dict=state_dict,
         test_dataloader=test_dataloader,
         device=device,
+        bit_w=bit_w,
+        bit_a=bit_a,
     )
 
     return metrics
