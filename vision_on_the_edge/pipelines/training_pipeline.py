@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 @pipeline
 def training_pipeline(
-    device: str = "auto",
+    device: str = "cpu",
     num_epochs: int = 10,
     batch_size: int = 64,
     learning_rate: float = 0.001,

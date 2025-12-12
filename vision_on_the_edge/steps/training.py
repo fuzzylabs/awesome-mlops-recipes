@@ -5,6 +5,7 @@ from zenml.logger import get_logger
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from model import mobilenet_v2
+from mobilenetv2 import QuantMobileNetV2
 from zenml.integrations.constants import PYTORCH
 
 logger = get_logger(__name__)
@@ -19,7 +20,7 @@ def train_step(
 ) -> nn.Module:
     """Train the model."""
 
-    model = mobilenet_v2().to(device)
+    model = QuantMobileNetV2(num_classes=10, bit_w=8, bit_a=8).to(device)
 
     loss_fn = nn.CrossEntropyLoss()
     optimiser = optim.Adam(model.parameters(), lr=lr)
