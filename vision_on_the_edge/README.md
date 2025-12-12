@@ -2,7 +2,7 @@
 
 This recipe gives you a concrete, reusable starting point for any project where a vision model needs to live out in the wild.
 
-**Cook Time:** ~30 minutes
+**Cook Time:** ~30 minutes (Highly depeneds on the GPU you have, it'd be painfully slow on CPU.)
 
 ## 🥗 Ingredients
 
@@ -18,14 +18,14 @@ This recipe gives you a concrete, reusable starting point for any project where 
 ├── run.py          # Entry point; runs Optuna search or single run
 ├── pipelines/      # ZenML pipeline wiring
 ├── steps/          # Data, train, eval steps
-├── mobilenetv2.py  # Quantized MobileNetV2
+├── mobilenetv2.py  # Quantiseable MobileNetV2
 ├── quantisation.py # Quantization helpers
 └── data/           # MNIST cache (downloaded on first run)
 ```
 
 ## ✅ Prerequisites
 
-- Python 3.13+ with `uv` and `make`
+- Python 3.12 with `uv` and `make`
 
 ## 🚀 Quick Start
 

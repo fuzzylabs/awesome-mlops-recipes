@@ -1,4 +1,4 @@
-"""Quantised MobileNetV2 model using Brevitas."""
+"""Quantiseable MobileNetV2 model using Brevitas."""
 
 import torch
 import torch.nn as nn
@@ -8,7 +8,17 @@ from torchvision.models._utils import _make_divisible
 
 
 class QuantConvBNReLU(nn.Sequential):
-    def __init__(self, in_c, out_c, stride, bit_w, bit_a):
+    """Quantised Convolutional Block with Batch Normalisation and ReLU."""
+    def __init__(self, in_c: int, out_c: int, stride: int, bit_w: int, bit_a: int) -> None:
+        """Initialise the Quantised Convolutional Block with Batch Normalisation and ReLU.
+        
+        Args:
+            in_c: Input channels.
+            out_c: Output channels.
+            stride: Stride of the convolution.
+            bit_w: Weight quantisation bits used for reconstruction.
+            bit_a: Activation quantisation bits used for reconstruction.
+        """
         super().__init__(
             qnn.QuantConv2d(
                 in_channels=in_c,
@@ -29,7 +39,18 @@ class QuantConvBNReLU(nn.Sequential):
 
 
 class QuantInvertedResidual(nn.Module):
-    def __init__(self, in_c, out_c, stride, expand_ratio, bit_w, bit_a):
+    """Quantised Inverted Residual Block."""
+    def __init__(self, in_c: int, out_c: int, stride: int, expand_ratio: int, bit_w: int, bit_a: int) -> None:
+        """Initialise the Quantised Inverted Residual Block.
+        
+        Args:
+            in_c: Input channels.
+            out_c: Output channels.
+            stride: Stride of the convolution.
+            expand_ratio: Expansion ratio of the residual block.
+            bit_w: Weight quantisation bits used for reconstruction.
+            bit_a: Activation quantisation bits used for reconstruction.
+        """
         super().__init__()
         hidden_dim = int(round(in_c * expand_ratio))
         self.use_res = stride == 1 and in_c == out_c
@@ -106,6 +127,7 @@ class QuantInvertedResidual(nn.Module):
 
 
 class QuantMobileNetV2(nn.Module):
+    """Quantised MobileNetV2 model."""
     def __init__(
         self,
         num_classes=1000,
@@ -114,7 +136,17 @@ class QuantMobileNetV2(nn.Module):
         bit_a=8,
         round_nearest=8,
         dropout=0.2,
-    ):
+    ) -> None:
+        """Initialise the Quantised MobileNetV2 model.
+        
+        Args:
+            num_classes: Number of classes.
+            width_mult: Width multiplier.
+            bit_w: Weight quantisation bits used for reconstruction.
+            bit_a: Activation quantisation bits used for reconstruction.
+            round_nearest: Round nearest.
+            dropout: Dropout rate.
+        """
         super().__init__()
 
         input_channel = 32
@@ -178,7 +210,8 @@ class QuantMobileNetV2(nn.Module):
             weight_bit_width=bit_w,
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the MobileNetV2 model."""
         x = self.features(x)
         x = self.pool(x)
         x = torch.flatten(x, 1)
