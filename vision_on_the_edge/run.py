@@ -20,7 +20,11 @@ os.environ["MLFLOW_TRACKING_PASSWORD"] = tracker.config.tracking_password
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse CLI arguments for the training pipeline."""
+    """Parse CLI arguments for the training pipeline.
+
+    Returns:
+        Parsed CLI arguments.
+    """
     parser = argparse.ArgumentParser(description="Run the ZenML training pipeline.")
     parser.add_argument("--num-epochs", type=int, default=3, help="Number of training epochs.")
     parser.add_argument("--batch-size", type=int, default=16, help="Training batch size.")
@@ -50,7 +54,19 @@ def parse_args() -> argparse.Namespace:
 
 
 def run_single_training(args: argparse.Namespace, bit_w: int, bit_a: int) -> Dict[str, Any]:
-    """Run the pipeline once and return metrics."""
+    """Run the pipeline once and return metrics.
+
+    Args:
+        args: Parsed CLI arguments.
+        bit_w: Bit width for weight quantization.
+        bit_a: Bit width for activation quantization.
+
+    Returns:
+        A dictionary of metrics produced by the pipeline run.
+
+    Raises:
+        RuntimeError: If metrics cannot be retrieved from the pipeline run.
+    """
     run_result = training_pipeline(
         num_epochs=args.num_epochs,
         batch_size=args.batch_size,
@@ -81,7 +97,15 @@ def run_single_training(args: argparse.Namespace, bit_w: int, bit_a: int) -> Dic
 
 
 def objective(trial: optuna.Trial, args: argparse.Namespace) -> float:
-    """Optuna objective to search bit widths."""
+    """Optuna objective to search bit widths.
+
+    Args:
+        trial: Optuna trial instance.
+        args: Parsed CLI arguments.
+
+    Returns:
+        Objective score combining accuracy, latency, and model size.
+    """
     bit_w = trial.suggest_categorical("bit_w", [2, 4, 6, 8])
     bit_a = trial.suggest_categorical("bit_a", [2, 4, 6, 8])
 
@@ -118,7 +142,11 @@ def objective(trial: optuna.Trial, args: argparse.Namespace) -> float:
 
 
 def main() -> None:
-    """Run the ZenML pipeline end-to-end."""
+    """Run the ZenML pipeline end-to-end.
+
+    Returns:
+        None.
+    """
     args = parse_args()
 
     mlflow.set_tracking_uri(tracker.config.tracking_uri)

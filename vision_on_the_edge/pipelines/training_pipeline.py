@@ -20,7 +20,19 @@ def training_pipeline(
     batch_size: int = 64,
     learning_rate: float = 0.001,
 ):
-    """Run the training workflow end-to-end."""
+    """Run the training workflow end-to-end.
+
+    Args:
+        bit_w: Bit width for weight quantization.
+        bit_a: Bit width for activation quantization.
+        device: Device to train on ('auto', 'cpu', 'cuda').
+        num_epochs: Number of epochs to train for.
+        batch_size: Batch size for training.
+        learning_rate: Learning rate for the optimizer.
+
+    Returns:
+        Metrics dictionary from the evaluation step.
+    """
     if device == "auto": # No mps support with Brevitas
         if torch.cuda.is_available():
             device = "cuda"

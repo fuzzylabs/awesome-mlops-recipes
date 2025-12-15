@@ -39,6 +39,8 @@ source .venv/bin/activate
 2) Start MLflow
 
 ```bash
+# The basic auth app requires a secret key for CSRF protection.
+export MLFLOW_FLASK_SERVER_SECRET_KEY="my-secret-key"
 mlflow server --app-name basic-auth --backend-store-uri sqlite:///mlflow.db --port 5000
 ```
 

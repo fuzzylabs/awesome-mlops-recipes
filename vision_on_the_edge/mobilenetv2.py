@@ -9,9 +9,10 @@ from torchvision.models._utils import _make_divisible
 
 class QuantConvBNReLU(nn.Sequential):
     """Quantised Convolutional Block with Batch Normalisation and ReLU."""
+
     def __init__(self, in_c: int, out_c: int, stride: int, bit_w: int, bit_a: int) -> None:
-        """Initialise the Quantised Convolutional Block with Batch Normalisation and ReLU.
-        
+        """Initialise the quantised convolutional block.
+
         Args:
             in_c: Input channels.
             out_c: Output channels.
@@ -40,9 +41,10 @@ class QuantConvBNReLU(nn.Sequential):
 
 class QuantInvertedResidual(nn.Module):
     """Quantised Inverted Residual Block."""
+
     def __init__(self, in_c: int, out_c: int, stride: int, expand_ratio: int, bit_w: int, bit_a: int) -> None:
-        """Initialise the Quantised Inverted Residual Block.
-        
+        """Initialise the quantised inverted residual block.
+
         Args:
             in_c: Input channels.
             out_c: Output channels.
@@ -119,7 +121,15 @@ class QuantInvertedResidual(nn.Module):
 
         self.conv = nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run the forward pass through the inverted residual block.
+
+        Args:
+            x: Input tensor.
+
+        Returns:
+            Output tensor after applying the block.
+        """
         out = self.conv(x)
         if self.use_res:
             return x + out
@@ -128,6 +138,7 @@ class QuantInvertedResidual(nn.Module):
 
 class QuantMobileNetV2(nn.Module):
     """Quantised MobileNetV2 model."""
+
     def __init__(
         self,
         num_classes=1000,
@@ -137,8 +148,8 @@ class QuantMobileNetV2(nn.Module):
         round_nearest=8,
         dropout=0.2,
     ) -> None:
-        """Initialise the Quantised MobileNetV2 model.
-        
+        """Initialise the quantised MobileNetV2 model.
+
         Args:
             num_classes: Number of classes.
             width_mult: Width multiplier.
@@ -211,7 +222,14 @@ class QuantMobileNetV2(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the MobileNetV2 model."""
+        """Forward pass of the MobileNetV2 model.
+
+        Args:
+            x: Input tensor.
+
+        Returns:
+            Output logits tensor.
+        """
         x = self.features(x)
         x = self.pool(x)
         x = torch.flatten(x, 1)

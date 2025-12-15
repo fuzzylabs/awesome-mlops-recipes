@@ -21,7 +21,7 @@ def train_step(
     bit_a: int,
 ) -> dict[str, torch.Tensor]:
     """Train the model and return its state dict.
-    
+
     Args:
         device: Device to train on ('auto', 'cpu', 'cuda').
         train_dataloader: DataLoader for training data.

@@ -12,10 +12,10 @@ logger = get_logger(__name__)
 def load_data_step(
     batch_size: int,
 ) -> tuple[DataLoader, DataLoader]:
-    """Load the data for the vision on the edge.
-    
+    """Load MNIST data and return train/test data loaders.
+
     Args:
-        batch_size: The batch size to use for the data loaders.
+        batch_size: Batch size to use for the data loaders.
 
     Returns:
         A tuple of train and test data loaders.
