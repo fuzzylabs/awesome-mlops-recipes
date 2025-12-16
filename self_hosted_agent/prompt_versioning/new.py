@@ -19,6 +19,6 @@ def create_new_prompt(prompt_name: str, initial_template: str):
 
 if __name__ == "__main__":
     prompt_name = "pr-review-agent-system-prompt"
-    initial_template = "You are an expert pull request reviewer for the fuzzylabs/sre-agent repository."
+    initial_template = "You are an expert pull request reviewer."
 
     create_new_prompt(prompt_name, initial_template)
