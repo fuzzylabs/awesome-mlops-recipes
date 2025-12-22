@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logfire-backend
+  namespace: logfire
+  labels:
+    app: logfire-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logfire-backend
+  template:
+    metadata:
+      labels:
+        app: logfire-backend
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/all-in-one:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 16686
+              name: ui
+            - containerPort: 4318
+              name: otlp-http
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 16686
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 16686
+            initialDelaySeconds: 30
+            periodSeconds: 30

@@ -1,5 +1,7 @@
 """PR review Agent."""
 
+import os
+
 import logfire
 from pydantic_ai import Agent, RunContext
 
@@ -14,9 +16,20 @@ def initialise_agent() -> tuple[Agent, str]:
     """Initialise the PR review agent."""
     # Load config
     cfg = get_config()
+    # Point OTLP traces at Jaeger (logfire backend)
+    for key, value in cfg.logfire.env.items():
+        os.environ.setdefault(key, value)
 
     # Configure observability
-    logfire.configure(token=cfg.logfire.token)
+    logfire.configure(
+        # Setting a service name is good practice in general, but especially
+        # important for Jaeger, otherwise spans will be labeled as 'unknown_service'
+        service_name='pr-review-agent',
+
+        # Sending to Logfire is on by default regardless of the OTEL env vars.
+        # Keep this line here if you don't want to send to both Jaeger and Logfire.
+        send_to_logfire=False,
+    )
     logfire.instrument_pydantic_ai()
 
     # Create the PR review agent with model from config
