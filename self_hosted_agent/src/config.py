@@ -5,6 +5,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field
 import os
+from functools import cached_property
 
 
 class OllamaConfig(BaseModel):
@@ -35,9 +36,17 @@ class MLflowConfig(BaseModel):
 
 class LogfireConfig(BaseModel):
     """Logfire configuration."""
-    token: str = os.getenv("LOGFIRE_TOKEN", "")
-    if not token:
-        raise ValueError("LOGFIRE_TOKEN environment variable is not set")
+    traces_endpoint: str = os.getenv(
+        "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+        "http://localhost:4318/v1/traces",
+    )
+
+    @cached_property
+    def env(self) -> dict[str, str]:
+        """Environment variables to point OTLP traces to Jaeger."""
+        return {
+            "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": self.traces_endpoint,
+        }
 
 
 class GitHubConfig(BaseModel):
@@ -104,4 +113,3 @@ def reload_config() -> Config:
     global _config
     _config = load_config()
     return _config
-

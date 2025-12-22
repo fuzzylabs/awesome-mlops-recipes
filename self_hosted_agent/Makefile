@@ -1,4 +1,4 @@
-.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-agent portforward-vllm portforward-agent portforward-mlflow eval-review-quality teardown-vllm teardown-agent logs-agent logs-vllm restart-agent wait-mlflow wait-vllm wait-agent status-mlflow status-vllm status-agent help
+.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm deploy-jaeger setup-agent portforward-vllm portforward-jaeger portforward-agent portforward-mlflow eval-review-quality teardown-vllm teardown-agent logs-agent logs-vllm restart-agent wait-mlflow wait-vllm wait-agent status-mlflow status-vllm status-agent help
 
 # Deploy MLflow
 deploy-mlflow:
@@ -10,14 +10,14 @@ create-new-prompt:
 	@echo "Creating new prompt..."
 	@echo "Make sure MLflow is port-forwarded (run 'make portforward-mlflow' in another terminal)"
 	@sleep 2
-	uv run python prmopt_versioning/new.py
+	uv run prompt_versioning/new.py
 
 # Update prompt version (requires MLflow to be port-forwarded)
 update-prompt:
 	@echo "Updating prompt version..."
 	@echo "Make sure MLflow is port-forwarded (run 'make portforward-mlflow' in another terminal)"
 	@sleep 2
-	uv run python prmopt_versioning/update.py
+	uv run prompt_versioning/update.py
 
 # Setup vLLM (build + push + deploy)
 setup-vllm:
@@ -25,6 +25,11 @@ setup-vllm:
 	cd llm && ./build-and-push.sh
 	@echo "Deploying vLLM to Kubernetes..."
 	cd k8s/vllm && ./deploy.sh
+
+# Setup logfire backend (deploy)
+deploy-jaeger:
+	@echo "Deploying Jaeger backend to Kubernetes..."
+	cd k8s/logfire_backend && ./deploy.sh
 
 # Setup agent (build + push + deploy)
 setup-agent:
@@ -37,6 +42,10 @@ setup-agent:
 portforward-vllm:
 	@echo "Port forwarding vLLM service to localhost:8000..."
 	kubectl port-forward svc/qwen3 8000:8000 -n vllm
+
+portforward-jaeger:
+	@echo "Port forwarding Jaeger service to localhost:16686..."
+	kubectl port-forward svc/logfire-backend 16686:16686 -n logfire
 
 # Port forward services
 portforward-agent:

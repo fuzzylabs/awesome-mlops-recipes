@@ -19,7 +19,7 @@ This recipe cooks up a PR review agent running on Kubernetes, powered by vLLM fo
 ├── src/                    # Agent source code & FastAPI server
 ├── evals/                  # Evaluation suites (LLM judge, span-based)
 ├── llm/                    # vLLM server Dockerfile
-├── prmopt_versioning/      # Prompt versioning helper scripts
+├── prompt_versioning/      # Prompt versioning helper scripts
 ├── k8s/                    # Kubernetes manifests
 │   ├── vllm/              # vLLM deployment
 │   └── agent/             # Agent deployment
@@ -89,11 +89,11 @@ Then, create the initial system prompt for your agent:
 make create-new-prompt
 ```
 
-This registers a new prompt in MLflow named `pr-review-agent-system-prompt`. You can customise the prompt template in [`prmopt_versioning/new.py`](prmopt_versioning/new.py).
+This registers a new prompt in MLflow named `pr-review-agent-system-prompt`. You can customise the prompt template in [`prompt_versioning/new.py`](prompt_versioning/new.py).
 
 To update the prompt later with a new version:
 ```bash
-# Edit the prompt in prmopt_versioning/update.py
+# Edit the prompt in prompt_versioning/update.py
 make update-prompt
 ```
 
@@ -121,13 +121,27 @@ Check logs to verify the model server is ready to take requests (~4 minutes). Yo
 make logs-vllm
 ```
 
-### 4. Deploy the Agent
+### 4. Deploy Logfire backend
 
-Create Kubernetes secrets first:
+Logfire uses the OpenTelemetry standard. This means that you can configure the SDK to export to any backend that supports OpenTelemetry. To keep it simple, we will use [this](https://logfire.pydantic.dev/docs/how-to-guides/alternative-backends/) guide to host [Jaeger](https://www.jaegertracing.io/). But you can use any backend you like or just use pydantic close source platform to start with.
+
+```bash
+make deploy-jaeger
+```
+
+Port forward the Jaeger UI.
+
+```bash
+make portforward-jaeger
+```
+
+### 5. Deploy the Agent
+
+Create the GitHub token secret first:
 ```bash
 cd k8s/agent
 cp secret.yaml.example secret.yaml
-# Edit secret.yaml with your tokens
+# Edit secret.yaml with your GitHub token
 cd ../..
 ```
 
@@ -151,7 +165,7 @@ Check logs:
 make logs-agent
 ```
 
-### 5. Test the Agent
+### 6. Test the Agent
 
 Port forward the agent service:
 ```bash
@@ -165,6 +179,8 @@ curl -X POST http://localhost:8080/review \
   -d '{"pr_title": "Add new feature"}'
 ```
 
+You should now be able to see the agent traces in the Jaeger UI.
+
 ## 🎯 Evaluation
 
 Run the LLM judge evaluation suite:
@@ -175,9 +191,8 @@ Run the LLM judge evaluation suite:
 > make portforward-vllm    # Required if using vLLM provider
 > ```
 
-Export your Logfire, GitHub, and Anthropic tokens:
+Export your GitHub and Anthropic tokens:
 ```bash
-export LOGFIRE_TOKEN=""
 export GITHUB_TOKEN=""
 export ANTHROPIC_API_KEY=""
 ```
@@ -197,7 +212,7 @@ The agent loads its system prompt from MLflow at startup. Here's how to experime
 
 **1. Update your prompt**
 
-Edit the prompt template in `prmopt_versioning/update.py`, then register the new version:
+Edit the prompt template in `prompt_versioning/update.py`, then register the new version:
 ```bash
 make portforward-mlflow  # If not already running
 make update-prompt

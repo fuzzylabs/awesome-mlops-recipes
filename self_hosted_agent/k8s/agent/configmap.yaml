@@ -15,3 +15,5 @@ data:
       tracking_uri: "http://mlflow.mlflow.svc.cluster.local:5000"
       prompt_name: "pr-review-agent-system-prompt"
       prompt_version: ""
+    logfire:
+      traces_endpoint: "http://logfire-backend.logfire.svc.cluster.local:4318/v1/traces"

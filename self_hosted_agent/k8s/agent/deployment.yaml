@@ -28,11 +28,6 @@ spec:
                 secretKeyRef:
                   name: pr-review-agent-secrets
                   key: GITHUB_TOKEN
-            - name: LOGFIRE_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: pr-review-agent-secrets
-                  key: LOGFIRE_TOKEN
           volumeMounts:
             - name: config
               mountPath: /app/src/config.yaml
@@ -62,4 +57,3 @@ spec:
         - name: config
           configMap:
             name: pr-review-agent-config
-
