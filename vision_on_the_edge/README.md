@@ -79,7 +79,7 @@ The above commands will carry out 10 optuna trails based on objective defined in
 
 ## 📦 Export + Deploy (Optional)
 
-The pipeline now exports a fully-quantized TFLite model by default. Deployment to ESP32 via PlatformIO is optional and controlled by `--deploy`.
+The pipeline exports a fully-quantized TFLite model by default. Deployment to ESP32 via PlatformIO is optional and controlled by `--deploy`.
 
 ```bash
 python run.py \
@@ -94,6 +94,33 @@ To skip export entirely:
 ```bash
 python run.py --no-export
 ```
+
+## 🔁 Optuna → Export → Deploy Flow
+
+1) **Optimise with Optuna**  
+Run Optuna to search hyperparameters; each trial runs the ZenML pipeline through evaluation only (no export/deploy).
+
+```bash
+python run.py --optuna-trials 10
+```
+
+2) **Pick the best trial**  
+Use the Optuna output/MLflow to choose the best `bit_w`, `bit_a`, and other parameters.
+
+3) **Export and deploy the chosen configuration**  
+Run a single training with those parameters to export the TFLite model and (optionally) deploy it to the ESP32.
+
+```bash
+python run.py \
+  --bit-w 4 \
+  --bit-a 4 \
+  --export-dir artifacts/edge \
+  --model-name fashion_mnist_tiny_cnn \
+  --deploy \
+  --platformio-project-dir vision_on_the_edge/platformio_esp32
+```
+
+When running Optuna (`--optuna-trials > 0`), export and deployment are skipped by design. Use the single-run path above for export/deployment of your chosen configuration.
 
 ### Configuring the ESP32 board and input source
 

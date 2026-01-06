@@ -86,7 +86,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run_single_training(args: argparse.Namespace, bit_w: int, bit_a: int) -> Dict[str, Any]:
+def run_single_training(
+    args: argparse.Namespace, bit_w: int, bit_a: int, export_tflite: bool, deploy: bool
+) -> Dict[str, Any]:
     """Run the pipeline once and return metrics.
 
     Args:
@@ -107,10 +109,10 @@ def run_single_training(args: argparse.Namespace, bit_w: int, bit_a: int) -> Dic
         bit_w=bit_w,
         bit_a=bit_a,
         device=args.device,
-        export_tflite=not args.no_export,
+        export_tflite=export_tflite,
         export_dir=args.export_dir,
         model_name=args.model_name,
-        deploy=args.deploy,
+        deploy=deploy,
         platformio_project_dir=args.platformio_project_dir,
         upload=not args.no_upload,
     )
@@ -149,7 +151,13 @@ def objective(trial: optuna.Trial, args: argparse.Namespace) -> float:
     bit_a = trial.suggest_categorical("bit_a", [2, 4, 6, 8])
 
     with mlflow.start_run(run_name=f"optuna-trial-{trial.number}", nested=True):
-        metrics = run_single_training(args=args, bit_w=bit_w, bit_a=bit_a)
+        metrics = run_single_training(
+            args=args,
+            bit_w=bit_w,
+            bit_a=bit_a,
+            export_tflite=False,
+            deploy=False,
+        )
         accuracy = float(metrics.get("overall_accuracy", 0.0))
         latency = float(metrics.get("latency_ms", 0.0))
         size_mb = float(metrics.get("model_size_mb", 0.0))
@@ -193,13 +201,22 @@ def main() -> None:
 
     if args.optuna_trials > 0:
         study = optuna.create_study(direction="maximize")
-        study.optimize(partial(objective, args=args), n_trials=args.optuna_trials)
+        study.optimize(
+            partial(objective, args=args),
+            n_trials=args.optuna_trials,
+        )
 
         print(f"Best trial score: {study.best_trial.value:.2f}")
         print(f"Best params: {study.best_trial.params}")
     else:
         with mlflow.start_run(run_name="single-run"):
-            metrics = run_single_training(args=args, bit_w=args.bit_w, bit_a=args.bit_a)
+            metrics = run_single_training(
+                args=args,
+                bit_w=args.bit_w,
+                bit_a=args.bit_a,
+                export_tflite=not args.no_export,
+                deploy=args.deploy,
+            )
             accuracy = float(metrics.get("overall_accuracy", 0.0))
             latency = float(metrics.get("latency_ms", 0.0))
             size_mb = float(metrics.get("model_size_mb", 0.0))
