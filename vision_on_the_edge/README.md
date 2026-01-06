@@ -11,6 +11,8 @@ This recipe gives you a concrete, reusable starting point for any project where 
 - **Quantisation aware training**: [Brevitas](https://xilinx.github.io/brevitas/v0.12.1/)
 - **Experiment tracking**: [MLflow](https://mlflow.org/)
 - **Pipeline orchestrator**: [ZenML](https://www.zenml.io/)
+- **Model conversion**: ONNX, onnx2tf, TensorFlow Lite
+- **Deployment**: [PlatformIO](https://platformio.org/)
 
 ## 🗄️ Project Structure
 
@@ -18,9 +20,10 @@ This recipe gives you a concrete, reusable starting point for any project where 
 .                   # This recipe
 ├── run.py          # Entry point; runs Optuna search or single run
 ├── pipelines/      # ZenML pipeline wiring
-├── steps/          # Data, train, eval steps
-├── mobilenetv2.py  # Quantiseable MobileNetV2
-└── data/           # MNIST cache (downloaded on first run)
+├── steps/          # Data, train, eval, export, deploy steps
+├── tiny_cnn.py     # Quantiseable tiny CNN for Fashion-MNIST
+├── platformio_esp32/ # PlatformIO project for ESP32-S3 deployment
+└── data/           # Fashion-MNIST cache (downloaded on first run)
 ```
 
 ## ✅ Prerequisites
@@ -73,3 +76,26 @@ python run.py --optuna-trials 10
 The above commands will carry out 10 optuna trails based on objective defined in [run.py](run.py#83)
 
 > Note: Optuna can also run a full grid search, which tries every possible combination of your parameters instead of sampling them randomly.
+
+## 📦 Export + Deploy (Optional)
+
+The pipeline now exports a fully-quantized TFLite model by default. Deployment to ESP32 via PlatformIO is optional and controlled by `--deploy`.
+
+```bash
+python run.py \
+  --export-dir artifacts/edge \
+  --model-name fashion_mnist_tiny_cnn \
+  --deploy \
+  --platformio-project-dir vision_on_the_edge/platformio_esp32
+```
+
+To skip export entirely:
+
+```bash
+python run.py --no-export
+```
+
+### Configuring the ESP32 board and input source
+
+- Board target: update the `board = ...` line in `vision_on_the_edge/platformio_esp32/platformio.ini`.
+- Input source: `vision_on_the_edge/platformio_esp32/src/main.cpp` currently fills the input with a default value and runs one inference; replace that block with your real input capture (camera, sensor, serial, etc).

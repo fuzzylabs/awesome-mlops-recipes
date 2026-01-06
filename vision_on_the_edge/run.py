@@ -50,6 +50,39 @@ def parse_args() -> argparse.Namespace:
         default=0.2,
         help="Penalty weight per MB of model size when computing the Optuna score.",
     )
+    parser.add_argument(
+        "--export-dir",
+        type=str,
+        default="artifacts/edge",
+        help="Directory to write exported TFLite artifacts.",
+    )
+    parser.add_argument(
+        "--model-name",
+        type=str,
+        default="fashion_mnist_tiny_cnn",
+        help="Base name for exported model artifacts.",
+    )
+    parser.add_argument(
+        "--no-export",
+        action="store_true",
+        help="Skip exporting the model to TFLite.",
+    )
+    parser.add_argument(
+        "--deploy",
+        action="store_true",
+        help="Deploy a TFLite Micro model via PlatformIO after evaluation.",
+    )
+    parser.add_argument(
+        "--platformio-project-dir",
+        type=str,
+        default=None,
+        help="Path to the PlatformIO project used for ESP32 deployment.",
+    )
+    parser.add_argument(
+        "--no-upload",
+        action="store_true",
+        help="Build the PlatformIO project without uploading to the device.",
+    )
     return parser.parse_args()
 
 
@@ -74,6 +107,12 @@ def run_single_training(args: argparse.Namespace, bit_w: int, bit_a: int) -> Dic
         bit_w=bit_w,
         bit_a=bit_a,
         device=args.device,
+        export_tflite=not args.no_export,
+        export_dir=args.export_dir,
+        model_name=args.model_name,
+        deploy=args.deploy,
+        platformio_project_dir=args.platformio_project_dir,
+        upload=not args.no_upload,
     )
 
     # ZenML can return a PipelineRunView instead of direct outputs; try to read the evaluation artifact.

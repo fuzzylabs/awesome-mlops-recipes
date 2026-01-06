@@ -5,7 +5,7 @@ from zenml.logger import get_logger
 from torch import nn, optim
 from torch.utils.data import DataLoader
 import torch
-from mobilenetv2 import QuantMobileNetV2
+from tiny_cnn import QuantTinyCNN
 from zenml.integrations.constants import PYTORCH
 
 logger = get_logger(__name__)
@@ -34,7 +34,7 @@ def train_step(
         Dictionary containing the state dict of the model.
     """
 
-    model = QuantMobileNetV2(num_classes=10, bit_w=bit_w, bit_a=bit_a).to(device)
+    model = QuantTinyCNN(num_classes=10, bit_w=bit_w, bit_a=bit_a).to(device)
 
     loss_fn = nn.CrossEntropyLoss()
     optimiser = optim.Adam(model.parameters(), lr=lr)
