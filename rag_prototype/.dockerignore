@@ -1,0 +1,92 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# MLflow local database
+mlflow.db
+mlflow.db-shm
+mlflow.db-wal
+mlruns/
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+
+# Evaluation code
+evals/
+
+# Kubernetes manifests
+k8s/
+
+# Helm charts
+helm/
+
+# LLM docker files
+llm/
+
+# Metaflow pipeline
+data_pipeline/
+
+# Prompt versioning scripts
+prompt_versioning/
+
+# Experiments
+experiments/
+
+# Documentation
+*.md
+!README.md
+
+# Build scripts (already built)
+build-and-push.sh
+
+# Local development files
+.env
+.env.local
+*.local
+
+# Mac
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/

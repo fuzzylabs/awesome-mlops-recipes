@@ -1,0 +1,31 @@
+dataset:
+  name: Linq-AI-Research/FinDER
+  split: train
+  doc_limit: 50
+  text_field_candidates:
+    - document
+    - doc
+    - text
+    - content
+  id_field_candidates:
+    - doc_id
+    - id
+    - document_id
+
+chunking:
+  chunk_size: 800
+  chunk_overlap: 100
+
+chroma:
+  host: chroma.chroma.svc.cluster.local
+  port: 8000
+  collection: finder
+  rebuild: true
+
+embeddings:
+  model: BAAI/bge-large-en-v1.5
+
+s3:
+  bucket: your-bucket-name
+  prefix: rag-prototype/chroma-snapshots
+  keep_last: 3

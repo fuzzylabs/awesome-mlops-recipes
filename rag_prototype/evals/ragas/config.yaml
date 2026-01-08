@@ -1,0 +1,13 @@
+dataset:
+  name: Linq-AI-Research/FinDER
+  split: validation
+  limit: 50
+  question_field_candidates:
+    - question
+    - query
+  answer_field_candidates:
+    - answer
+    - ground_truth
+  context_field_candidates:
+    - contexts
+    - context

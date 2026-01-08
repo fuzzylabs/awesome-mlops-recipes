@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metaflow
+  namespace: metaflow
+  labels:
+    app: metaflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metaflow
+  template:
+    metadata:
+      labels:
+        app: metaflow
+    spec:
+      serviceAccountName: metaflow-service
+      containers:
+        - name: metaflow
+          image: your-account-id.dkr.ecr.eu-west-2.amazonaws.com/rag-metaflow:latest
+          imagePullPolicy: Always
+          command: ["/bin/sh", "-c", "metaflow service"]
+          envFrom:
+            - configMapRef:
+                name: metaflow-config
+            - secretRef:
+                name: metaflow-secrets
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10

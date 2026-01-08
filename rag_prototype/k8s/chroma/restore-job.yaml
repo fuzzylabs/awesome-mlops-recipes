@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: chroma-restore
+  namespace: chroma
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      serviceAccountName: chroma-snapshot
+      restartPolicy: Never
+      containers:
+        - name: restore
+          image: amazon/aws-cli:2.15.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              LATEST=$(aws s3 ls s3://$S3_BUCKET/$S3_PREFIX/ | awk '{print $4}' | tail -n 1)
+              if [ -z "$LATEST" ]; then
+                echo "No snapshots found."
+                exit 0
+              fi
+              ARCHIVE=/tmp/chroma-latest.tar.gz
+              aws s3 cp s3://$S3_BUCKET/$S3_PREFIX/$LATEST "$ARCHIVE"
+              rm -rf /chroma/chroma/*
+              tar -xzf "$ARCHIVE" -C /chroma
+          env:
+            - name: S3_BUCKET
+              value: your-bucket
+            - name: S3_PREFIX
+              value: rag-prototype/chroma-snapshots
+          volumeMounts:
+            - name: chroma-data
+              mountPath: /chroma
+      volumes:
+        - name: chroma-data
+          persistentVolumeClaim:
+            claimName: chroma-data
