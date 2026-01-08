@@ -61,26 +61,44 @@ cd awesome-mlops-recipes-iac/<stack>/pulumi
 pulumi stack output
 ```
 
+Expected outputs for the `rag_prototype` stack:
+- `ragApiEcrUrl`
+- `ragVllmServerEcrUrl`
+- `ragMetaflowEcrUrl`
+- `mlflowS3Bucket`
+- `mlflowS3RoleArn`
+- `metaflowS3RoleArn`
+- `chromaSnapshotRoleArn`
+- `mlflowDbEndpoint`
+- `mlflowDbName`
+- `mlflowDbUsername`
+
+The database password is stored in Pulumi config:
+```bash
+pulumi config get mlflowDbPassword --show-secrets
+```
+
 ECR image URIs:
-- `k8s/vllm/deployment.yaml` -> ECR repo for `rag-vllm-server`
-- `k8s/rag-api/deployment.yaml` -> ECR repo for `rag-api`
-- `k8s/metaflow/deployment.yaml` -> ECR repo for `rag-metaflow`
+- `k8s/vllm/deployment.yaml` -> `ragVllmServerEcrUrl`
+- `k8s/rag-api/deployment.yaml` -> `ragApiEcrUrl`
+- `k8s/metaflow/deployment.yaml` -> `ragMetaflowEcrUrl`
 
 S3 bucket + prefix:
-- `data_pipeline/config.yaml` -> `s3.bucket`
-- `k8s/chroma/snapshot-job.yaml` -> `S3_BUCKET` and `S3_PREFIX`
-- `k8s/chroma/restore-job.yaml` -> `S3_BUCKET` and `S3_PREFIX`
-- `k8s/metaflow/configmap.yaml` -> `METAFLOW_DATASTORE_SYSROOT_S3`, `METAFLOW_DATATOOLS_SYSROOT_S3`
+- `data_pipeline/config.yaml` -> `s3.bucket` (use `mlflowS3Bucket`)
+- `k8s/chroma/snapshot-job.yaml` -> `S3_BUCKET` and `S3_PREFIX` (use `mlflowS3Bucket`)
+- `k8s/chroma/restore-job.yaml` -> `S3_BUCKET` and `S3_PREFIX` (use `mlflowS3Bucket`)
+- `k8s/metaflow/configmap.yaml` -> `METAFLOW_DATASTORE_SYSROOT_S3`, `METAFLOW_DATATOOLS_SYSROOT_S3` (use `mlflowS3Bucket`)
 
 RDS + credentials:
-- `helm/mlflow/mlflow.env` -> use RDS endpoint + credentials from IaC outputs
-- `k8s/metaflow/configmap.yaml` -> `MF_METADATA_DB_HOST`, `MF_METADATA_DB_USER`, `MF_METADATA_DB_NAME`
-- `k8s/metaflow/secret.yaml` -> `MF_METADATA_DB_PSWD`
+- `helm/mlflow/mlflow.env` -> `mlflowDbEndpoint`, `mlflowDbName`, `mlflowDbUsername` + `mlflowDbPassword`
+- `k8s/metaflow/configmap.yaml` -> `MF_METADATA_DB_HOST`, `MF_METADATA_DB_USER`, `MF_METADATA_DB_NAME` (use `mlflowDbEndpoint`, `mlflowDbUsername`, set DB name to `metaflow`)
+- `k8s/metaflow/secret.yaml` -> `MF_METADATA_DB_PSWD` (use `mlflowDbPassword`)
 - Create the `metaflow` database on the shared RDS instance (separate from `mlflow`)
 
 IRSA role ARNs:
-- `k8s/metaflow/serviceaccount.yaml` -> role with S3 read/write
-- `k8s/chroma/serviceaccount.yaml` -> role with S3 read/write
+- `k8s/metaflow/serviceaccount.yaml` -> `metaflowS3RoleArn`
+- `k8s/chroma/serviceaccount.yaml` -> `chromaSnapshotRoleArn`
+- `helm/mlflow/mlflow.env` -> `mlflowS3RoleArn`
 
 ## Quick Start
 
