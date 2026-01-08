@@ -1,6 +1,6 @@
 # Self-Hosted RAG Prototype
 
-This recipe builds a retrieval-augmented generation prototype on Kubernetes. It uses vLLM for model serving, Chroma for the vector store, Metaflow for data ingestion, MLflow for prompt and experiment tracking, and RAGAS + Guardrails AI for evaluation.
+This recipe builds a retrieval-augmented generation prototype on Kubernetes. It uses vLLM for model serving, Chroma for the vector store, Metaflow for data ingestion, MLflow for prompt and experiment tracking, and RAGAS + Guardrails AI for evaluation. Part 2 adds Ray Serve, monitoring, load testing, and a feedback loop.
 
 Cook Time: ~1-2 hours (excluding model download and indexing)
 
@@ -11,8 +11,12 @@ Cook Time: ~1-2 hours (excluding model download and indexing)
 - Embeddings: BAAI/bge-large-en-v1.5
 - Reranker: BAAI/bge-reranker-base
 - Model serving: vLLM (Qwen/Qwen3-4B-Thinking-2507)
+- Model proxy: Ray Serve (vLLM behind Ray Serve; RAG API stays outside)
 - Prompt management: MLflow
-- Evaluation: RAGAS + Guardrails AI (hallucination and jailbreak)
+- Evaluation: RAGAS + Guardrails AI (hallucination, jailbreak, financial advice)
+- Monitoring: Prometheus + Grafana
+- Load testing: Locust
+- Feedback loop: Pydantic AI + Postgres
 
 ## Project Structure
 
@@ -20,14 +24,20 @@ Cook Time: ~1-2 hours (excluding model download and indexing)
 .
 ├── src/                    # RAG API + retrieval/generation logic
 ├── evals/                  # RAGAS + Guardrails AI evals
+├── feedback_loop/          # Feedback agent + schema
+├── load_testing/           # Locust workload
 ├── llm/                    # vLLM server Dockerfile
+├── ray_serve/              # Ray Serve proxy Dockerfile
 ├── prompt_versioning/      # Prompt versioning helper scripts
 ├── data_pipeline/          # Metaflow flows (ingest -> parse -> chunk -> embed -> index)
 ├── k8s/                    # Kubernetes manifests
 │   ├── vllm/              # vLLM deployment
 │   ├── chroma/            # Chroma deployment
 │   ├── rag-api/           # RAG API deployment
-│   └── metaflow/          # Metaflow deployment
+│   ├── metaflow/          # Metaflow deployment
+│   ├── ray-serve/          # Ray Serve deployment
+│   ├── monitoring/         # Prometheus + Grafana
+│   └── locust/             # Locust load testing
 └── helm/                   # MLflow installation
     └── mlflow/            # MLflow installation scripts
 ```
@@ -41,7 +51,7 @@ Expected resources:
 - EKS cluster (CPU + GPU node group)
 - RDS PostgreSQL (shared between MLflow and Metaflow, two databases)
 - S3 bucket (MLflow artifacts + Chroma snapshots)
-- ECR repositories (rag-api, rag-vllm-server, rag-metaflow)
+- ECR repositories (rag-api, rag-vllm-server, rag-metaflow, rag-rayserve)
 - VPC + IAM roles for service access
 
 ## Prerequisites
@@ -65,6 +75,7 @@ Expected outputs for the `rag_prototype` stack:
 - `ragApiEcrUrl`
 - `ragVllmServerEcrUrl`
 - `ragMetaflowEcrUrl`
+- `ragRayserveEcrUrl`
 - `mlflowS3Bucket`
 - `mlflowS3RoleArn`
 - `metaflowS3RoleArn`
@@ -82,6 +93,7 @@ ECR image URIs:
 - `k8s/vllm/deployment.yaml` -> `ragVllmServerEcrUrl`
 - `k8s/rag-api/deployment.yaml` -> `ragApiEcrUrl`
 - `k8s/metaflow/deployment.yaml` -> `ragMetaflowEcrUrl`
+- `k8s/ray-serve/rayservice.yaml` -> `ragRayserveEcrUrl`
 
 S3 bucket + prefix:
 - `data_pipeline/config.yaml` -> `s3.bucket` (use `mlflowS3Bucket`)
@@ -99,6 +111,11 @@ IRSA role ARNs:
 - `k8s/metaflow/serviceaccount.yaml` -> `metaflowS3RoleArn`
 - `k8s/chroma/serviceaccount.yaml` -> `chromaSnapshotRoleArn`
 - `helm/mlflow/mlflow.env` -> `mlflowS3RoleArn`
+
+Other placeholders:
+- `k8s/monitoring/values.yaml` -> `grafana.adminPassword`
+- `src/config.yaml` -> `generation.base_url` (switch to Ray Serve when running Part 2)
+- `FEEDBACK_DB_DSN` -> Postgres DSN for the shared RDS instance (use the existing `metaflow` database unless you create a separate one)
 
 ## Quick Start
 
@@ -209,6 +226,72 @@ curl -X POST http://localhost:8080/query \
   -d '{"question":"What is the revenue of Company X in 2023?"}'
 ```
 
+## Part 2: Production Features
+
+### 9. Put vLLM behind Ray Serve
+
+Install the KubeRay operator (once per cluster):
+```bash
+helm repo add kuberay https://ray-project.github.io/kuberay-helm/
+helm repo update
+helm upgrade --install kuberay-operator kuberay/kuberay-operator -n kuberay --create-namespace
+```
+
+Build and deploy the Ray Serve proxy:
+```bash
+make build-rayserve-image
+make setup-ray
+```
+
+Update `src/config.yaml` so `generation.base_url` points at Ray Serve:
+```
+http://rayserve-vllm-serve-svc.rayserve.svc.cluster.local:8000/v1
+```
+
+Rebuild and redeploy the RAG API to pick up the change:
+```bash
+make setup-rag-api
+```
+
+### 10. Enable monitoring (Prometheus + Grafana)
+
+```bash
+make setup-monitoring
+```
+
+The RAG API exposes Prometheus metrics at `/metrics`. The ServiceMonitor in `k8s/monitoring/rag-api-servicemonitor.yaml` scrapes it automatically.
+
+Port-forward Grafana and Prometheus:
+```bash
+make portforward-grafana
+make portforward-prometheus
+```
+
+### 11. Run load tests with Locust
+
+```bash
+make setup-locust
+make portforward-locust
+```
+
+### 12. Feedback loop (manual trigger)
+
+Create the feedback table on the shared RDS instance:
+```bash
+psql "$FEEDBACK_DB_DSN" -f feedback_loop/schema.sql
+```
+
+Run the feedback agent to propose a prompt update:
+```bash
+export OPENAI_API_KEY="local"
+make run-feedback-agent
+```
+
+Approve the proposed prompt after review:
+```bash
+make approve-feedback-prompt
+```
+
 ## Evaluation
 
 Run the RAG evaluation suite:
@@ -216,7 +299,9 @@ Run the RAG evaluation suite:
 make eval-rag
 ```
 
-This logs RAGAS metrics plus Guardrails AI hallucination/jailbreak checks to MLflow. Update `evals/ragas/config.yaml` to match the FinDER fields, and edit the JSONL files under `evals/guardrails/` for jailbreak/hallucination prompts.
+This logs RAGAS metrics plus Guardrails AI hallucination/jailbreak/financial advice checks to MLflow. Update `evals/ragas/config.yaml` to match the FinDER fields, and edit the JSONL files under `evals/guardrails/` for guardrail prompts.
+
+Financial advice checks are in `evals/guardrails/financial_advice.py` with cases in `evals/guardrails/financial_advice_cases.jsonl`.
 
 If your API is not port-forwarded to localhost, set `RAG_API_URL` before running guardrail checks.
 If MLflow is not port-forwarded to localhost, set `MLFLOW_TRACKING_URI` before running evals.

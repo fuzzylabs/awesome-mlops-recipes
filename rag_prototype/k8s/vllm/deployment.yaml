@@ -34,7 +34,7 @@ spec:
           sizeLimit: "2Gi"
       containers:
         - name: qwen3
-          image: your-account-id.dkr.ecr.eu-west-2.amazonaws.com/rag-vllm-server:latest
+          image: REPLACE_WITH_RAG_VLLM_ECR_URL:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

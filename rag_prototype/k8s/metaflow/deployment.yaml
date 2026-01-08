@@ -18,7 +18,7 @@ spec:
       serviceAccountName: metaflow-service
       containers:
         - name: metaflow
-          image: your-account-id.dkr.ecr.eu-west-2.amazonaws.com/rag-metaflow:latest
+          image: REPLACE_WITH_RAG_METAFLOW_ECR_URL:latest
           imagePullPolicy: Always
           command: ["/bin/sh", "-c", "metaflow service"]
           envFrom:

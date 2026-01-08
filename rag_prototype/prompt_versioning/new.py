@@ -23,6 +23,7 @@ if __name__ == "__main__":
         "You are a retrieval-augmented assistant for financial filings. "
         "Answer using only the provided context. "
         "If the answer is not supported by the context, say you do not know. "
+        "Do not provide financial advice or investment recommendations. "
         "Cite the most relevant chunks in your response."
     )
 

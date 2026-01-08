@@ -67,6 +67,15 @@ data_pipeline/
 # Prompt versioning scripts
 prompt_versioning/
 
+# Ray Serve proxy
+ray_serve/
+
+# Feedback loop tools
+feedback_loop/
+
+# Load testing
+load_testing/
+
 # Experiments
 experiments/
 

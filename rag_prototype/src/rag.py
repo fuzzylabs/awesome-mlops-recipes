@@ -17,6 +17,7 @@ DEFAULT_SYSTEM_PROMPT = (
     "You are a retrieval-augmented assistant for financial filings. "
     "Answer using only the provided context. "
     "If the answer is not supported by the context, say you do not know. "
+    "Do not provide financial advice or investment recommendations. "
     "Cite the most relevant chunks in your response."
 )
 
@@ -59,13 +60,14 @@ class RagService:
     def _embed(self, text: str) -> list[float]:
         return self._embedder.encode(text, normalize_embeddings=True).tolist()
 
-    def retrieve(self, question: str) -> list[RetrievedChunk]:
+    def retrieve(self, question: str) -> tuple[list[RetrievedChunk], int]:
         query_embedding = self._embed(question)
         result = self._collection.query(
             query_embeddings=[query_embedding],
             n_results=self.config.retrieval.top_k,
             include=["documents", "metadatas", "ids"],
         )
+        retrieved_count = len(result.get("ids", [[]])[0])
         chunks: list[RetrievedChunk] = []
         for chunk_id, text, metadata in zip(
             result.get("ids", [[]])[0],
@@ -79,7 +81,7 @@ class RagService:
                     metadata=metadata or {},
                 )
             )
-        return self._rerank(question, chunks)
+        return self._rerank(question, chunks), retrieved_count
 
     def _rerank(self, question: str, chunks: Iterable[RetrievedChunk]) -> list[RetrievedChunk]:
         chunk_list = list(chunks)
@@ -93,7 +95,7 @@ class RagService:
         return chunk_list[: self.config.retrieval.rerank_k]
 
     def answer(self, question: str) -> dict[str, Any]:
-        chunks = self.retrieve(question)
+        chunks, retrieved_count = self.retrieve(question)
         context_block = self._format_context(chunks)
         user_prompt = (
             f"Question:\n{question}\n\n"
@@ -104,6 +106,8 @@ class RagService:
         return {
             "answer": response,
             "chunks": [chunk.__dict__ for chunk in chunks],
+            "retrieved_count": retrieved_count,
+            "reranked_count": len(chunks),
         }
 
     def _format_context(self, chunks: Iterable[RetrievedChunk]) -> str:

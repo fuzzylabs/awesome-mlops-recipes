@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: rag-api
-          image: your-account-id.dkr.ecr.eu-west-2.amazonaws.com/rag-api:latest
+          image: REPLACE_WITH_RAG_API_ECR_URL:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
