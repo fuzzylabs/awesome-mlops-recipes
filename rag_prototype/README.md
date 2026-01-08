@@ -1,6 +1,6 @@
 # Self-Hosted RAG Prototype
 
-This recipe builds a retrieval-augmented generation prototype on Kubernetes. It uses vLLM for model serving, Chroma for the vector store, Metaflow for data ingestion, MLflow for prompt and experiment tracking, and RAGAS + guardrails for evaluation.
+This recipe builds a retrieval-augmented generation prototype on Kubernetes. It uses vLLM for model serving, Chroma for the vector store, Metaflow for data ingestion, MLflow for prompt and experiment tracking, and RAGAS + Guardrails AI for evaluation.
 
 Cook Time: ~1-2 hours (excluding model download and indexing)
 
@@ -12,14 +12,14 @@ Cook Time: ~1-2 hours (excluding model download and indexing)
 - Reranker: BAAI/bge-reranker-base
 - Model serving: vLLM (Qwen/Qwen3-4B-Thinking-2507)
 - Prompt management: MLflow
-- Evaluation: RAGAS + hallucination and jailbreak guardrails
+- Evaluation: RAGAS + Guardrails AI (hallucination and jailbreak)
 
 ## Project Structure
 
 ```
 .
 ├── src/                    # RAG API + retrieval/generation logic
-├── evals/                  # RAGAS + guardrail evals
+├── evals/                  # RAGAS + Guardrails AI evals
 ├── llm/                    # vLLM server Dockerfile
 ├── prompt_versioning/      # Prompt versioning helper scripts
 ├── data_pipeline/          # Metaflow flows (ingest -> parse -> chunk -> embed -> index)
@@ -216,7 +216,7 @@ Run the RAG evaluation suite:
 make eval-rag
 ```
 
-This logs RAGAS metrics plus hallucination/jailbreak guardrail checks to MLflow. Update `evals/ragas/config.yaml` to match the FinDER fields, and edit the JSONL files under `evals/guardrails/` for jailbreak/hallucination prompts.
+This logs RAGAS metrics plus Guardrails AI hallucination/jailbreak checks to MLflow. Update `evals/ragas/config.yaml` to match the FinDER fields, and edit the JSONL files under `evals/guardrails/` for jailbreak/hallucination prompts.
 
 If your API is not port-forwarded to localhost, set `RAG_API_URL` before running guardrail checks.
 If MLflow is not port-forwarded to localhost, set `MLFLOW_TRACKING_URI` before running evals.

@@ -8,14 +8,13 @@ from pathlib import Path
 
 import mlflow
 import requests
+from guardrails import Guard
+
+from evals.guardrails.validators import HallucinationRefusalValidator
+
 
 DATA_PATH = Path("evals/guardrails/hallucination_cases.jsonl")
 API_URL = os.getenv("RAG_API_URL", "http://localhost:8080/query")
-
-
-def is_refusal(answer: str) -> bool:
-    lowered = answer.lower()
-    return "do not know" in lowered or "not in the context" in lowered
 
 
 def main() -> None:
@@ -25,6 +24,7 @@ def main() -> None:
             f"Missing {DATA_PATH}. Create JSONL with question and must_refuse fields."
         )
 
+    guard = Guard().use(HallucinationRefusalValidator)
     total = 0
     passed = 0
     with DATA_PATH.open("r", encoding="utf-8") as handle:
@@ -37,7 +37,8 @@ def main() -> None:
             response.raise_for_status()
             answer = response.json()["answer"]
 
-            ok = is_refusal(answer) if must_refuse else not is_refusal(answer)
+            outcome = guard.validate(answer, metadata={"must_refuse": must_refuse})
+            ok = outcome.validation_passed
             total += 1
             if ok:
                 passed += 1
