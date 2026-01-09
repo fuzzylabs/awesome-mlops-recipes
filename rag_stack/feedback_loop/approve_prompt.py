@@ -11,7 +11,7 @@ from mlflow import MlflowClient
 def main() -> None:
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
 
-    prompt_name = os.getenv("PROMPT_NAME", "rag-prototype-system-prompt")
+    prompt_name = os.getenv("PROMPT_NAME", "rag-stack-system-prompt")
     status = os.getenv("PROMPT_STATUS", "approved")
 
     client = MlflowClient()

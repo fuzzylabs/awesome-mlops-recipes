@@ -13,7 +13,7 @@ NAMESPACE="locust"
 
 kubectl delete -f service.yaml --ignore-not-found
 kubectl delete -f deployment.yaml --ignore-not-found
-kubectl delete -f configmap.yaml --ignore-not-found
+kubectl delete configmap locustfile -n "$NAMESPACE" --ignore-not-found
 
 if kubectl get namespace "$NAMESPACE" &> /dev/null; then
     kubectl delete namespace "$NAMESPACE"

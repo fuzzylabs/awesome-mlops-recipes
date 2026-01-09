@@ -16,7 +16,7 @@ def update_prompt(prompt_name: str, new_template: str):
 
 
 if __name__ == "__main__":
-    prompt_name = "rag-prototype-system-prompt"
+    prompt_name = "rag-stack-system-prompt"
 
     new_template = """\
 You are a retrieval-augmented assistant for financial filings and annual reports.

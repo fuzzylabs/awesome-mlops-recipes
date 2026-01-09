@@ -1,1 +1,0 @@
-"""RAG prototype package."""

@@ -17,7 +17,6 @@ DEFAULT_SYSTEM_PROMPT = (
     "You are a retrieval-augmented assistant for financial filings. "
     "Answer using only the provided context. "
     "If the answer is not supported by the context, say you do not know. "
-    "Do not provide financial advice or investment recommendations. "
     "Cite the most relevant chunks in your response."
 )
 
@@ -47,7 +46,7 @@ class RagService:
         self._system_prompt = self._load_prompt()
 
     def _load_prompt(self) -> str:
-        prompt_name = "rag-prototype-system-prompt"
+        prompt_name = "rag-stack-system-prompt"
         try:
             mlflow.set_tracking_uri(self.config.mlflow.tracking_uri)
             prompt = mlflow.genai.load_prompt(prompt_name)

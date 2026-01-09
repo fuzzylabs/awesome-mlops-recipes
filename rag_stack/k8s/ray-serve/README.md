@@ -1,5 +1,6 @@
 # Ray Serve (vLLM proxy)
 
+Part 2 add-on for the RAG stack.
 This folder deploys Ray Serve as a lightweight proxy in front of vLLM. The RAG API calls Ray Serve, and Ray Serve forwards requests to vLLM.
 
 ## Prerequisites

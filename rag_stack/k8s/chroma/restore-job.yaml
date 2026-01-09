@@ -29,7 +29,7 @@ spec:
             - name: S3_BUCKET
               value: your-bucket
             - name: S3_PREFIX
-              value: rag-prototype/chroma-snapshots
+              value: rag-stack/chroma-snapshots
           volumeMounts:
             - name: chroma-data
               mountPath: /chroma

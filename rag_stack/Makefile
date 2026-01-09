@@ -1,4 +1,4 @@
-.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-chroma setup-rag-api setup-metaflow build-pipeline-image run-pipeline build-eval-data snapshot-chroma restore-chroma setup-ray build-rayserve-image setup-monitoring setup-locust run-feedback-agent approve-feedback-prompt portforward-vllm portforward-chroma portforward-rag-api portforward-mlflow portforward-metaflow portforward-rayserve portforward-grafana portforward-prometheus portforward-locust eval-rag teardown-vllm teardown-chroma teardown-rag-api teardown-metaflow teardown-ray teardown-monitoring teardown-locust logs-vllm logs-rag-api logs-metaflow wait-mlflow wait-vllm wait-chroma wait-rag-api wait-metaflow status-mlflow status-vllm status-chroma status-rag-api status-metaflow help
+.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-chroma setup-rag-api setup-metaflow build-pipeline-image run-pipeline build-eval-data snapshot-chroma restore-chroma setup-ray build-rayserve-image setup-monitoring setup-locust run-feedback-agent approve-feedback-prompt portforward-vllm portforward-chroma portforward-rag-api portforward-mlflow portforward-metaflow portforward-rayserve portforward-grafana portforward-prometheus portforward-locust eval-rag eval-rag-part1 eval-rag-part2 teardown-vllm teardown-chroma teardown-rag-api teardown-metaflow teardown-ray teardown-monitoring teardown-locust logs-vllm logs-rag-api logs-metaflow wait-mlflow wait-vllm wait-chroma wait-rag-api wait-metaflow status-mlflow status-vllm status-chroma status-rag-api status-metaflow help
 
 # Deploy MLflow
 deploy-mlflow:
@@ -124,13 +124,18 @@ portforward-locust:
 	kubectl port-forward svc/locust 8089:8089 -n locust
 
 # Run evaluations
-eval-rag:
-	@echo "Running RAG evaluation suite..."
+eval-rag-part1:
+	@echo "Running Part 1 RAG evaluation suite..."
 	uv run python evals/ragas/build_eval_data.py
 	uv run python evals/ragas/run.py
 	uv run python evals/guardrails/hallucination.py
 	uv run python evals/guardrails/jailbreak.py
+
+eval-rag-part2: eval-rag-part1
+	@echo "Running Part 2 guardrails..."
 	uv run python evals/guardrails/financial_advice.py
+
+eval-rag: eval-rag-part2
 
 # Snapshot and restore Chroma
 snapshot-chroma:
@@ -265,7 +270,9 @@ help:
 	@echo "  portforward-locust     - Port forward Locust (localhost:8089)"
 	@echo ""
 	@echo "Evaluation:"
-	@echo "  eval-rag               - Run RAG evaluation suite"
+	@echo "  eval-rag-part1         - Run Part 1 evals (RAGAS + hallucination/jailbreak)"
+	@echo "  eval-rag-part2         - Run Part 2 evals (Part 1 + financial advice)"
+	@echo "  eval-rag               - Run full eval suite (alias for Part 2)"
 	@echo ""
 	@echo "Chroma Snapshot:"
 	@echo "  snapshot-chroma        - Snapshot Chroma to S3"

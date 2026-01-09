@@ -18,12 +18,11 @@ def create_new_prompt(prompt_name: str, initial_template: str):
 
 
 if __name__ == "__main__":
-    prompt_name = "rag-prototype-system-prompt"
+    prompt_name = "rag-stack-system-prompt"
     initial_template = (
         "You are a retrieval-augmented assistant for financial filings. "
         "Answer using only the provided context. "
         "If the answer is not supported by the context, say you do not know. "
-        "Do not provide financial advice or investment recommendations. "
         "Cite the most relevant chunks in your response."
     )
 

@@ -1,5 +1,6 @@
 # Monitoring (Prometheus + Grafana)
 
+Part 2 add-on for the RAG stack.
 This folder installs Prometheus and Grafana using the kube-prometheus-stack Helm chart, plus a ServiceMonitor and a basic RAG API dashboard.
 
 ## Required Updates

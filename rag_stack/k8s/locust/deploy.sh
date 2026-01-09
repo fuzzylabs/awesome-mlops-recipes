@@ -10,6 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 NAMESPACE="locust"
+LOCUSTFILE_PATH="${SCRIPT_DIR}/../../load_testing/locustfile.py"
 
 if ! command -v kubectl &> /dev/null; then
     echo "Error: kubectl not found. Please install kubectl first."
@@ -29,8 +30,16 @@ else
     echo "[OK] Namespace '$NAMESPACE' created"
 fi
 
-echo "Applying ConfigMap..."
-kubectl apply -f configmap.yaml
+echo "Syncing ConfigMap..."
+if [ ! -f "$LOCUSTFILE_PATH" ]; then
+    echo "Error: locustfile not found at ${LOCUSTFILE_PATH}"
+    exit 1
+fi
+
+kubectl create configmap locustfile \
+    --from-file=locustfile.py="$LOCUSTFILE_PATH" \
+    -n "$NAMESPACE" \
+    --dry-run=client -o yaml | kubectl apply -f -
 
 echo "Applying Deployment..."
 kubectl apply -f deployment.yaml

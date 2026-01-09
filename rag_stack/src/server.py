@@ -1,4 +1,4 @@
-"""FastAPI server for the RAG prototype."""
+"""FastAPI server for the RAG stack."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ class QueryResponse(BaseModel):
     chunks: list[dict]
 
 
-app = FastAPI(title="RAG Prototype", version="0.1.0")
+app = FastAPI(title="RAG Stack", version="0.1.0")
 
 config = load_config()
 rag_service = RagService(config)

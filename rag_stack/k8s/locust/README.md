@@ -1,6 +1,8 @@
 # Locust Load Testing
 
+Part 2 add-on for the RAG stack.
 This folder deploys Locust in-cluster to load test the RAG API.
+Edit `load_testing/locustfile.py` to change the workload before deployment; the deploy script creates the ConfigMap from that file.
 
 ## Deploy
 

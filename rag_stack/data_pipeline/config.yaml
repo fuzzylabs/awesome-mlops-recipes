@@ -27,5 +27,5 @@ embeddings:
 
 s3:
   bucket: your-bucket-name
-  prefix: rag-prototype/chroma-snapshots
+  prefix: rag-stack/chroma-snapshots
   keep_last: 3
