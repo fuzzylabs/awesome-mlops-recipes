@@ -2,15 +2,25 @@
 
 This recipe cooks up a PR review agent running on Kubernetes, powered by vLLM for model serving and MLflow for prompt management.
 
+This recipe is split into two parts that build on each other:
+- Part 1 (Prototype): vLLM, MLflow prompt management, evals, and basic observability.
+- Part 2 (Production governance): MCP ContextForge gateway with fine-grained tool policies and provenance.
+
 **Cook Time**: ~1 Hour
 
 ## 🥗 Ingredients
 
+### Part 1: Prototype
 - **Agent Framework**: Pydantic AI
 - **Model Serving**: vLLM
 - **Evaluation**: Pydantic Evals
 - **Observability**: Pydantic Logfire
 - **Prompt Management**: MLflow
+
+### Part 2: Production governance
+- **MCP Gateway + Policy Engine**: IBM MCP ContextForge
+- **Tool Policy Enforcement**: Schema Guard + rate limits
+- **Provenance**: ContextForge tool telemetry exporter (OpenTelemetry)
 
 ## 🗄️ Project Structure
 
@@ -19,10 +29,13 @@ This recipe cooks up a PR review agent running on Kubernetes, powered by vLLM fo
 ├── src/                    # Agent source code & FastAPI server
 ├── evals/                  # Evaluation suites (LLM judge, span-based)
 ├── llm/                    # vLLM server Dockerfile
+├── context_forge/          # ContextForge policy config (Part 2)
 ├── prompt_versioning/      # Prompt versioning helper scripts
 ├── k8s/                    # Kubernetes manifests
 │   ├── vllm/              # vLLM deployment
-│   └── agent/             # Agent deployment
+│   ├── logfire_backend/   # Jaeger backend
+│   ├── agent/             # Agent deployment
+│   └── context_forge/     # ContextForge gateway (Part 2)
 └── helm/                   # Helm charts
     └── mlflow/            # MLflow installation
 ```
@@ -40,6 +53,8 @@ This recipe requires the following AWS resources:
 
 💡 **Quick Setup**: We provide ready-to-use Infrastructure as Code using Pulumi: [awesome-mlops-recipes-iac](https://github.com/fuzzylabs/awesome-mlops-recipes-iac)
 
+Part 2 reuses the same AWS resources and runs in the same Kubernetes cluster.
+
 ## ✅ Prerequisites
 
 1. **Kubernetes cluster** (EKS with 1 GPU node for vLLM and 1 CPU node for Agent and MLFlow)
@@ -48,7 +63,50 @@ This recipe requires the following AWS resources:
 4. **uv** - Python package manager ([installation guide](https://docs.astral.sh/uv/getting-started/installation/))
 5. **make** - Build automation tool (usually pre-installed on macOS/Linux)
 
+## ✍️ Placeholder Values to Update
+
+Use outputs from the IaC repo (`awesome-mlops-recipes-iac/self_hosted_agent/pulumi`) for RDS endpoints and ECR URIs.
+If you only run Part 1, you can ignore the Part 2 ContextForge placeholders.
+
+**IaC outputs you'll use:**
+- `agentServerEcrUrl`
+- `vllmServerEcrUrl`
+- `mlflowDbEndpoint`
+- `mlflowDbName`
+- `mlflowDbUsername`
+
+The MLflow database password is stored in Pulumi config:
+```bash
+pulumi config get mlflowDbPassword --show-secrets
+```
+
+**Secrets & config files to edit:**
+- `self_hosted_agent/helm/mlflow/mlflow.env` (copy from `mlflow.env.example`)
+  - `MLFLOW_DB_ENDPOINT`
+  - `MLFLOW_DB_NAME`
+  - `MLFLOW_DB_USERNAME`
+  - `MLFLOW_DB_PASSWORD` (Pulumi secret)
+  - `MLFLOW_S3_BUCKET`
+  - `MLFLOW_S3_ROLE_ARN`
+- `self_hosted_agent/k8s/agent/secret.yaml` (copy from `secret.yaml.example`)
+  - GitHub token for tool access
+- `self_hosted_agent/k8s/context_forge/secret.yaml` (copy from `secret.yaml.example`, Part 2)
+  - `DATABASE_URL` for the ContextForge Postgres database
+
+**Optional (Part 2 auth + gateway wiring):**
+- `self_hosted_agent/k8s/context_forge/configmap.yaml`
+  - `AUTH_REQUIRED` and JWT settings (if enabling gateway auth)
+- `self_hosted_agent/src/config.yaml` or `self_hosted_agent/k8s/agent/configmap.yaml`
+  - `mcp.gateway_url` (ContextForge `/mcp` endpoint)
+  - `mcp.gateway_auth_token` (if `AUTH_REQUIRED=true`)
+
+**Kubernetes image URIs:**
+- `self_hosted_agent/k8s/agent/deployment.yaml` -> `agentServerEcrUrl`
+- `self_hosted_agent/k8s/vllm/deployment.yaml` -> `vllmServerEcrUrl`
+
 ## 🚀 Quick Start
+
+Complete Steps 1-6 for the prototype. Stop after Step 6 if you do not want the production governance add-on (Part 2).
 
 ### 1. Deploy MLflow
 
@@ -181,6 +239,92 @@ curl -X POST http://localhost:8080/review \
 
 You should now be able to see the agent traces in the Jaeger UI.
 
+## Part 2: Production Governance (ContextForge)
+
+### Manual Steps Checklist
+
+- Create the `context_forge` database and `context_forge_user` on the existing RDS instance.
+- Create `k8s/context_forge/secret.yaml` with the ContextForge `DATABASE_URL`.
+- Register the GitHub MCP server in ContextForge and expose only the required tools.
+- Point the agent at the gateway by setting `mcp.gateway_url`.
+
+### 1. Deploy ContextForge
+
+First, create a dedicated database and user in the existing RDS instance (from the IaC stack). If you already have a `psql` client, you can use:
+```sql
+CREATE DATABASE context_forge;
+CREATE USER context_forge_user WITH PASSWORD '<strong-password>';
+GRANT ALL PRIVILEGES ON DATABASE context_forge TO context_forge_user;
+```
+
+You can connect using the MLflow RDS endpoint and admin credentials from the IaC outputs.
+
+Then, create the Kubernetes secret:
+```bash
+cd k8s/context_forge
+cp secret.yaml.example secret.yaml
+# Edit secret.yaml and set DATABASE_URL with the RDS endpoint, user, and password
+cd ../..
+```
+
+Deploy the gateway and policy engine:
+```bash
+make deploy-context-forge
+make wait-context-forge
+```
+
+Port forward the ContextForge UI/API:
+```bash
+make portforward-context-forge
+```
+
+The default `k8s/context_forge/configmap.yaml` disables auth for quick setup. For production, set `AUTH_REQUIRED=true` and configure JWT settings in the same ConfigMap.
+
+### 2. Configure Tool Policies
+
+Edit the policy configuration in `context_forge/plugins/config.yaml`. The defaults enable:
+- Rate limits per tool
+- Schema validation (permissive by default)
+- Tool-call telemetry export (OpenTelemetry)
+
+Once the schemas match your GitHub MCP tool definitions, switch Schema Guard to `enforce`.
+
+Re-deploy to apply updates:
+```bash
+make deploy-context-forge
+```
+
+### 3. Register the GitHub MCP Server and Tools
+
+Use the ContextForge UI or API to register the GitHub MCP server and expose only the tools your agent needs:
+- `search_pull_requests`
+- `pull_request_read`
+- `pull_request_review_write`
+
+Store the upstream GitHub token in ContextForge during registration so the agent never sees it.
+
+### 4. Point the Agent at the Gateway
+
+Update `src/config.yaml` (local) or `k8s/agent/configmap.yaml` (Kubernetes):
+```yaml
+mcp:
+  gateway_url: "http://context-forge.context-forge.svc.cluster.local:4444/mcp"
+  gateway_auth_token: ""
+  gateway_forward_github_token: false
+```
+
+Then restart the agent:
+```bash
+make restart-agent
+```
+
+> **Auth Note:** If you enable `AUTH_REQUIRED` in the gateway, set `gateway_auth_token` (or `MCP_GATEWAY_TOKEN`) so the agent can authenticate.
+
+### 5. Verify Governance + Provenance
+
+- Tool calls should now flow through ContextForge with allowlisted tools and schema validation.
+- Tool invocation telemetry is exported to Jaeger/Logfire via OpenTelemetry.
+
 ## 🎯 Evaluation
 
 Run the LLM judge evaluation suite:
@@ -255,6 +399,7 @@ Edit `src/config.yaml` to configure:
 - Model provider (vllm, ollama)
 - Model parameters
 - MLflow settings
+- MCP gateway settings (ContextForge URL + auth)
 
 ### vLLM Configuration
 
@@ -277,11 +422,13 @@ Run `make help` to see all commands, or use these common ones:
 - `make update-prompt` - Update prompt version
 - `make setup-vllm` - Build and deploy vLLM server
 - `make setup-agent` - Build and deploy agent
+- `make deploy-context-forge` - Deploy ContextForge gateway (Part 2)
 
 **Port Forwarding:**
 - `make portforward-mlflow` - Access MLflow UI (localhost:5000)
 - `make portforward-vllm` - Access vLLM (localhost:8000)
 - `make portforward-agent` - Access agent API (localhost:8080)
+- `make portforward-context-forge` - Access ContextForge (localhost:4444)
 
 **Evaluation:**
 - `make eval-review-quality` - Run LLM judge evaluation
@@ -289,10 +436,12 @@ Run `make help` to see all commands, or use these common ones:
 **Monitoring:**
 - `make logs-vllm` - Stream vLLM logs
 - `make logs-agent` - Stream agent logs
+- `make logs-context-forge` - Stream ContextForge logs
 
 **Teardown:**
 - `make teardown-vllm` - Remove vLLM deployment
 - `make teardown-agent` - Remove agent deployment
+- `make teardown-context-forge` - Remove ContextForge deployment
 
 ## 🧹 Teardown
 
@@ -300,4 +449,5 @@ To remove deployments:
 ```bash
 make teardown-agent
 make teardown-vllm
+make teardown-context-forge
 ```

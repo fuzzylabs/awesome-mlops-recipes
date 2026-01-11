@@ -17,3 +17,8 @@ data:
       prompt_version: ""
     logfire:
       traces_endpoint: "http://logfire-backend.logfire.svc.cluster.local:4318/v1/traces"
+    mcp:
+      gateway_url: ""
+      gateway_auth_token: ""
+      gateway_forward_github_token: true
+      github_mcp_url: "https://api.githubcopilot.com/mcp/"
