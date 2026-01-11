@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: context-forge-env
+  namespace: context-forge
+data:
+  APP_NAME: "MCP ContextForge"
+  HOST: "0.0.0.0"
+  PORT: "4444"
+  AUTH_REQUIRED: "false"
+  PLUGINS_ENABLED: "true"
+  PLUGIN_CONFIG_FILE: "/app/plugins/config.yaml"
+  OTEL_SERVICE_NAME: "mcp-context-forge"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://logfire-backend.logfire.svc.cluster.local:4318"
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://logfire-backend.logfire.svc.cluster.local:4318/v1/traces"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"

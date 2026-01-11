@@ -52,8 +52,14 @@ class LogfireConfig(BaseModel):
 class GitHubConfig(BaseModel):
     """GitHub configuration."""
     token: str = os.getenv("GITHUB_TOKEN", "")
-    if not token:
-        raise ValueError("GITHUB_TOKEN environment variable is not set")
+
+
+class MCPConfig(BaseModel):
+    """MCP gateway configuration."""
+    gateway_url: str | None = None
+    gateway_auth_token: str = os.getenv("MCP_GATEWAY_TOKEN", "")
+    gateway_forward_github_token: bool = True
+    github_mcp_url: str = "https://api.githubcopilot.com/mcp/"
 
 class Config(BaseModel):
     """Main configuration."""
@@ -61,6 +67,7 @@ class Config(BaseModel):
     mlflow: MLflowConfig = Field(default_factory=MLflowConfig)
     logfire: LogfireConfig = Field(default_factory=LogfireConfig)
     github: GitHubConfig = Field(default_factory=GitHubConfig)
+    mcp: MCPConfig = Field(default_factory=MCPConfig)
 
 
 def load_config(config_path: str | Path | None = None) -> Config:

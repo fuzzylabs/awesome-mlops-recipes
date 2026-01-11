@@ -2,11 +2,28 @@
 
 from pydantic_ai import RunContext, ToolDefinition
 from pydantic_ai.mcp import MCPServerStreamableHTTP
-import os
 
 from config import get_config
 
 cfg = get_config()
+
+
+def _build_mcp_headers() -> dict[str, str]:
+    """Build headers for MCP gateway or direct GitHub MCP."""
+    headers: dict[str, str] = {}
+    if cfg.mcp.gateway_url:
+        if cfg.mcp.gateway_auth_token:
+            headers["Authorization"] = f"Bearer {cfg.mcp.gateway_auth_token}"
+        if cfg.mcp.gateway_forward_github_token:
+            if not cfg.github.token:
+                raise ValueError("GITHUB_TOKEN must be set when forwarding upstream auth")
+            headers["X-Upstream-Authorization"] = f"Bearer {cfg.github.token}"
+    else:
+        if not cfg.github.token:
+            raise ValueError("GITHUB_TOKEN environment variable is not set")
+        headers["Authorization"] = f"Bearer {cfg.github.token}"
+    return headers
+
 
 async def filter_github_tools(
     ctx: RunContext[None], tool_defs: list[ToolDefinition]
@@ -22,7 +39,6 @@ async def filter_github_tools(
 
 # GitHub MCP server
 github_server = MCPServerStreamableHTTP(
-    'https://api.githubcopilot.com/mcp/',
-    headers={'Authorization': f'Bearer {cfg.github.token}'}
+    cfg.mcp.gateway_url or cfg.mcp.github_mcp_url,
+    headers=_build_mcp_headers(),
 )
-
