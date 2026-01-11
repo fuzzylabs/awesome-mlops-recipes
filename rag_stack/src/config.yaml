@@ -22,3 +22,4 @@ mlflow:
 guardrails:
   hallucination_threshold: 0.7
   jailbreak_threshold: 0.5
+  financial_advice_enabled: false

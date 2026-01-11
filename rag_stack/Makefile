@@ -131,9 +131,9 @@ eval-rag-part1:
 	uv run python evals/guardrails/hallucination.py
 	uv run python evals/guardrails/jailbreak.py
 
+eval-rag-part2: export RUN_FINANCIAL_ADVICE_GUARDRAIL=1
 eval-rag-part2: eval-rag-part1
-	@echo "Running Part 2 guardrails..."
-	uv run python evals/guardrails/financial_advice.py
+	@echo "Running Part 2 guardrails (financial advice)..."
 
 eval-rag: eval-rag-part2
 

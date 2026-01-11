@@ -12,6 +12,7 @@ from ragas.metrics import answer_correctness, context_precision, context_recall,
 from datasets import Dataset
 
 DATA_PATH = Path("evals/ragas/eval_data.jsonl")
+_GUARDRAIL_ENV = "RUN_FINANCIAL_ADVICE_GUARDRAIL"
 
 
 def load_eval_dataset() -> Dataset:
@@ -26,6 +27,11 @@ def load_eval_dataset() -> Dataset:
     return Dataset.from_list(records)
 
 
+def _should_run_financial_advice_guardrail() -> bool:
+    flag = os.getenv(_GUARDRAIL_ENV, "")
+    return flag.lower() in {"1", "true", "yes"}
+
+
 def main() -> None:
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
     dataset = load_eval_dataset()
@@ -34,6 +40,10 @@ def main() -> None:
     metrics_dict = {key: float(value) for key, value in results.items()}
     mlflow.log_metrics(metrics_dict)
     print(metrics_dict)
+    if _should_run_financial_advice_guardrail():
+        from evals.guardrails.financial_advice import main as run_financial_guardrail
+
+        run_financial_guardrail()
 
 
 if __name__ == "__main__":

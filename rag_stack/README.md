@@ -22,7 +22,7 @@ Cook Time: ~1-2 hours (excluding model download and indexing)
 - Monitoring: Prometheus + Grafana
 - Load testing: Locust
 - Feedback loop: Pydantic AI + Postgres
-- Business guardrails: Guardrails AI (financial advice)
+- Business guardrails: Guardrails AI (financial advice, enabled at runtime in Part 2)
 
 ## Project Structure
 
@@ -122,6 +122,7 @@ IRSA role ARNs:
 
 Other placeholders:
 - `src/config.yaml` -> `generation.base_url` (Part 1: vLLM service; Part 2: Ray Serve URL)
+- `src/config.yaml` -> `guardrails.financial_advice_enabled` (Part 2 only; keep `false` for Part 1)
 - `k8s/monitoring/values.yaml` -> `grafana.adminPassword` (Part 2)
 - `FEEDBACK_DB_DSN` -> Postgres DSN for the shared RDS instance (Part 2; use the existing `metaflow` database unless you create a separate one)
 
@@ -325,6 +326,12 @@ Use the feedback loop agent to propose a prompt update (or run `make update-prom
 ```bash
 make run-feedback-agent
 make approve-feedback-prompt
+```
+
+Enable the runtime financial advice guardrail (Part 2 only) in `src/config.yaml`:
+```yaml
+guardrails:
+  financial_advice_enabled: true
 ```
 
 Restart the RAG API deployment so it loads the updated prompt:

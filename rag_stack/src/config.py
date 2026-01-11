@@ -39,6 +39,7 @@ class MLflowConfig(BaseModel):
 class GuardrailConfig(BaseModel):
     hallucination_threshold: float
     jailbreak_threshold: float
+    financial_advice_enabled: bool = False
 
 
 class AppConfig(BaseModel):
