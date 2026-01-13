@@ -58,7 +58,19 @@ plugins:
               type: "string"
             event:
               type: "string"
-      result_schemas: {}
+      result_schemas:
+        pull_request_read:
+          anyOf:
+            - type: "string"
+              allOf:
+                - not:
+                    pattern: "Binary files"
+                - not:
+                    pattern: "GIT binary patch"
+                - pattern: "^diff --git "
+                - pattern: "^@@ "
+            - type: "array"
+            - type: "object"
       block_on_violation: true
 
   - name: "ToolsTelemetryExporter"
