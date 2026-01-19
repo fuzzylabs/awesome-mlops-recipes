@@ -1,4 +1,4 @@
-.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-chroma setup-rag-api setup-metaflow build-pipeline-image run-pipeline build-eval-data snapshot-chroma restore-chroma setup-ray build-rayserve-image setup-monitoring setup-locust run-feedback-agent approve-feedback-prompt portforward-vllm portforward-chroma portforward-rag-api portforward-mlflow portforward-metaflow portforward-rayserve portforward-grafana portforward-prometheus portforward-locust eval-rag eval-rag-part1 eval-rag-part2 teardown-vllm teardown-chroma teardown-rag-api teardown-metaflow teardown-ray teardown-monitoring teardown-locust logs-vllm logs-rag-api logs-metaflow wait-mlflow wait-vllm wait-chroma wait-rag-api wait-metaflow status-mlflow status-vllm status-chroma status-rag-api status-metaflow help
+.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-chroma setup-rag-api configure-metaflow setup-metaflow build-pipeline-image run-pipeline build-eval-data snapshot-chroma restore-chroma setup-ray build-rayserve-image setup-monitoring setup-locust run-feedback-agent approve-feedback-prompt portforward-vllm portforward-chroma portforward-rag-api portforward-mlflow portforward-metaflow portforward-rayserve portforward-grafana portforward-prometheus portforward-locust eval-rag eval-rag-part1 eval-rag-part2 teardown-vllm teardown-chroma teardown-rag-api teardown-metaflow teardown-ray teardown-monitoring teardown-locust logs-vllm logs-rag-api logs-metaflow wait-mlflow wait-vllm wait-chroma wait-rag-api wait-metaflow status-mlflow status-vllm status-chroma status-rag-api status-metaflow help
 
 # Deploy MLflow
 deploy-mlflow:
@@ -30,6 +30,12 @@ setup-vllm:
 setup-chroma:
 	@echo "Deploying Chroma to Kubernetes..."
 	cd k8s/chroma && ./deploy.sh
+
+# Configure Metaflow manifests from environment variables
+configure-metaflow:
+	@echo "Configuring Metaflow manifests..."
+	@echo "Required env vars: METAFLOW_S3_BUCKET, METAFLOW_RDS_ENDPOINT, METAFLOW_DB_PASSWORD, METAFLOW_S3_ROLE_ARN, RAG_METAFLOW_ECR_URL"
+	cd k8s/metaflow && ./configure.sh
 
 # Setup Metaflow
 setup-metaflow:
@@ -244,6 +250,7 @@ help:
 	@echo "  deploy-mlflow          - Deploy MLflow"
 	@echo "  create-new-prompt      - Register new system prompt (requires port-forward)"
 	@echo "  update-prompt          - Update prompt version (requires port-forward)"
+	@echo "  configure-metaflow     - Configure Metaflow manifests from env vars"
 	@echo "  setup-metaflow         - Deploy Metaflow service"
 	@echo "  build-pipeline-image   - Build and push Metaflow pipeline image"
 	@echo "  run-pipeline           - Run Metaflow pipeline (manual trigger)"

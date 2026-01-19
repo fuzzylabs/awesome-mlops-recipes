@@ -146,8 +146,21 @@ make deploy-mlflow
 
 ### 2. Deploy Metaflow (metadata service + UI)
 
-Metaflow runs as a service in Kubernetes and uses the shared RDS instance. If you plan to reuse the pipeline image for the service, build it first with `make build-pipeline-image`. Update the placeholders in `k8s/metaflow/README.md` (including `secret.yaml`), then deploy:
+Metaflow runs as a service in Kubernetes and uses the shared RDS instance. The deployment pulls the `rag-metaflow` image from ECR, so you must build and push it first:
 ```bash
+make build-pipeline-image
+```
+
+Then configure and deploy. Set the required environment variables from your Pulumi outputs,:
+```bash
+cd /path/to/awesome-mlops-recipes-iac/rag_stack/pulumi
+export METAFLOW_S3_BUCKET=$(pulumi stack output mlflowS3Bucket)
+export METAFLOW_RDS_ENDPOINT=$(pulumi stack output mlflowDbEndpoint)
+export METAFLOW_DB_PASSWORD=$(pulumi config get mlflowDbPassword)
+export METAFLOW_S3_ROLE_ARN=$(pulumi stack output metaflowS3RoleArn)
+export RAG_METAFLOW_ECR_URL=$(pulumi stack output ragMetaflowEcrUrl)
+cd /path/to/awesome-mlops-recipes/rag_stack
+make configure-metaflow
 make setup-metaflow
 ```
 

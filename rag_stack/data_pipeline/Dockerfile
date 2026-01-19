@@ -11,6 +11,7 @@ COPY pyproject.toml ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-dev
 
+# Copy pipeline code from build context (rag_stack/)
 COPY data_pipeline/ ./data_pipeline/
 
 ENV PATH="/app/.venv/bin:$PATH"

@@ -9,11 +9,25 @@ This folder contains a minimal Metaflow metadata service deployment that runs in
 - `serviceaccount.yaml` - IRSA role for S3 access
 - `deployment.yaml` - Metaflow metadata service
 - `service.yaml` - ClusterIP service
+- `configure.sh` - Configures manifests from environment variables
 - `deploy.sh` / `teardown.sh` - helper scripts
 
-## Required Updates (placeholders)
+## Quick Start (Automated)
 
-Update these values before deploying:
+Set environment variables from Pulumi outputs and run the configure script:
+```bash
+export METAFLOW_S3_BUCKET=$(pulumi stack output mlflowS3Bucket)
+export METAFLOW_RDS_ENDPOINT=$(pulumi stack output mlflowDbEndpoint)
+export METAFLOW_DB_PASSWORD=$(pulumi config get mlflowDbPassword)
+export METAFLOW_S3_ROLE_ARN=$(pulumi stack output metaflowS3RoleArn)
+export RAG_METAFLOW_ECR_URL=$(pulumi stack output ragMetaflowEcrUrl)
+./configure.sh
+./deploy.sh
+```
+
+## Manual Updates (placeholders)
+
+If you prefer to update manually, change these values before deploying:
 
 1. `configmap.yaml`
    - `METAFLOW_DATASTORE_SYSROOT_S3` and `METAFLOW_DATATOOLS_SYSROOT_S3`

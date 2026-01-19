@@ -61,8 +61,6 @@ helm/
 # LLM docker files
 llm/
 
-# Metaflow pipeline
-data_pipeline/
 
 # Prompt versioning scripts
 prompt_versioning/
