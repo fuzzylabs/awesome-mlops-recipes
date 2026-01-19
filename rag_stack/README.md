@@ -135,6 +135,7 @@ Complete these steps for the prototype. Stop after Step 8 if you do not want the
 ```bash
 cd helm/mlflow
 cp mlflow.env.example mlflow.env
+# Do not include the endpoint port number in MLFLOW_DB_ENDPOINT
 ```
 Edit mlflow.env with your values, then:
 ```bash
