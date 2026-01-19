@@ -146,10 +146,12 @@ make deploy-mlflow
 
 ### 2. Deploy Metaflow (metadata service + UI)
 
-Metaflow runs as a service in Kubernetes and uses the shared RDS instance. The deployment pulls the `rag-metaflow` image from ECR, so you must build and push it first:
+Metaflow runs as a service in Kubernetes and uses the shared RDS instance. Build and push the lightweight service image first:
 ```bash
-make build-pipeline-image
+make build-metaflow-service-image
 ```
+
+This builds a minimal image (~200 MB) with just Metaflow. The full pipeline image (`make build-pipeline-image`) is only needed later when running the data pipeline.
 
 Then configure and deploy. Set the required environment variables from your Pulumi outputs,:
 ```bash

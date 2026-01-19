@@ -20,7 +20,6 @@ spec:
         - name: metaflow
           image: REPLACE_WITH_RAG_METAFLOW_ECR_URL:latest
           imagePullPolicy: Always
-          command: ["/bin/sh", "-c", "metaflow service"]
           envFrom:
             - configMapRef:
                 name: metaflow-config

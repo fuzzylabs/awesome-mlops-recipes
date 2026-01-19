@@ -4,6 +4,8 @@ This folder contains a minimal Metaflow metadata service deployment that runs in
 
 ## Files
 
+- `Dockerfile` - Lightweight Metaflow service image (~200 MB)
+- `build-and-push.sh` - Builds and pushes the service image to ECR
 - `configmap.yaml` - Metaflow service configuration (S3 + DB settings)
 - `secret.yaml.example` - DB password for Metaflow
 - `serviceaccount.yaml` - IRSA role for S3 access
@@ -11,6 +13,18 @@ This folder contains a minimal Metaflow metadata service deployment that runs in
 - `service.yaml` - ClusterIP service
 - `configure.sh` - Configures manifests from environment variables
 - `deploy.sh` / `teardown.sh` - helper scripts
+
+## Image
+
+This folder contains a **lightweight** Dockerfile for the Metaflow metadata service (~200 MB). It only includes `metaflow` and `boto3` - not the heavy pipeline dependencies like `sentence-transformers` (PyTorch).
+
+Build and push the service image:
+```bash
+./build-and-push.sh
+# Or from rag_stack/: make build-metaflow-service-image
+```
+
+The full pipeline image (`make build-pipeline-image` from `data_pipeline/`) is only needed when running the actual data pipeline, not for the metadata service.
 
 ## Quick Start (Automated)
 
@@ -45,8 +59,7 @@ If you prefer to update manually, change these values before deploying:
    - Replace the IRSA role ARN with the Metaflow S3 access role
 
 4. `deployment.yaml`
-   - Replace the image with your Metaflow service image (ECR). You can reuse the `rag-metaflow` image built by `make build-pipeline-image`.
-   - The default command runs `metaflow service`. If your image uses a different entrypoint, adjust here.
+   - Replace the image with your Metaflow service image (ECR) built by `make build-metaflow-service-image`.
 
 ## Deploy
 

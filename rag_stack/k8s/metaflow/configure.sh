@@ -62,9 +62,12 @@ if [ ${#MISSING_VARS[@]} -gt 0 ]; then
     exit 1
 fi
 
+# Strip port from RDS endpoint if present (e.g., "host:5432" -> "host")
+METAFLOW_RDS_HOST="${METAFLOW_RDS_ENDPOINT%%:*}"
+
 echo "Using configuration:"
 echo "  S3 Bucket:     $METAFLOW_S3_BUCKET"
-echo "  RDS Endpoint:  $METAFLOW_RDS_ENDPOINT"
+echo "  RDS Host:      $METAFLOW_RDS_HOST"
 echo "  S3 Role ARN:   $METAFLOW_S3_ROLE_ARN"
 echo "  ECR URL:       $RAG_METAFLOW_ECR_URL"
 echo ""
@@ -73,7 +76,7 @@ echo ""
 echo "Updating configmap.yaml..."
 sed -i.bak \
     -e "s|s3://your-bucket/metaflow|s3://${METAFLOW_S3_BUCKET}/metaflow|g" \
-    -e "s|your-rds-endpoint|${METAFLOW_RDS_ENDPOINT}|g" \
+    -e "s|your-rds-endpoint|${METAFLOW_RDS_HOST}|g" \
     configmap.yaml
 rm -f configmap.yaml.bak
 echo "[OK] configmap.yaml updated"

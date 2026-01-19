@@ -11,6 +11,6 @@ data:
   METAFLOW_DATATOOLS_SYSROOT_S3: s3://your-bucket/metaflow
   MF_METADATA_DB_HOST: your-rds-endpoint
   MF_METADATA_DB_PORT: "5432"
-  MF_METADATA_DB_USER: metaflow
+  MF_METADATA_DB_USER: mlflow
   MF_METADATA_DB_NAME: metaflow
   MF_METADATA_DB_TYPE: postgres
