@@ -164,7 +164,12 @@ make configure-metaflow
 make setup-metaflow
 ```
 
-You can port-forward the service for local access:
+Wait for the pod to be ready:
+```bash
+make wait-metaflow
+```
+
+Then port-forward the service for local access:
 ```bash
 make portforward-metaflow
 ```
