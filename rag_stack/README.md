@@ -94,7 +94,7 @@ Expected outputs for the `rag_stack` stack:
 
 The database password is stored in Pulumi config:
 ```bash
-pulumi config get mlflowDbPassword --show-secrets
+pulumi config get mlflowDbPassword
 ```
 
 ECR image URIs:
