@@ -1,4 +1,4 @@
-"""Metaflow pipeline for ingesting and indexing FinDER subset."""
+"""Metaflow pipeline for ingesting and indexing 10-K filings."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ from typing import Any
 import boto3
 import chromadb
 from bs4 import BeautifulSoup
-from datasets import load_dataset
 from metaflow import FlowSpec, Parameter, step, kubernetes
 from sentence_transformers import SentenceTransformer
 import yaml
@@ -25,11 +24,32 @@ def load_config(path: str) -> dict[str, Any]:
         return yaml.safe_load(handle) or {}
 
 
-def pick_field(row: dict[str, Any], candidates: list[str]) -> str | None:
-    for name in candidates:
-        if name in row and row[name]:
-            return name
-    return None
+def load_local_10k_filings(directory: str) -> list[dict[str, Any]]:
+    """Load 10-K filings from local directory."""
+    docs = []
+    dir_path = Path(directory)
+    
+    # Load metadata if available
+    metadata_path = dir_path / "metadata.json"
+    metadata = {}
+    if metadata_path.exists():
+        with metadata_path.open() as f:
+            for item in json.load(f):
+                metadata[item.get("filepath", "")] = item
+    
+    # Load text files
+    for filepath in sorted(dir_path.glob("*.txt")):
+        text = filepath.read_text(encoding="utf-8")
+        meta = metadata.get(str(filepath), {})
+        docs.append({
+            "id": meta.get("id", filepath.stem),
+            "text": text,
+            "company": meta.get("company", filepath.stem),
+            "ticker": meta.get("ticker", ""),
+            "filing_date": meta.get("filing_date", ""),
+        })
+    
+    return docs
 
 
 def normalize_text(text: str) -> str:
@@ -63,20 +83,21 @@ class RagIngestFlow(FlowSpec):
     @kubernetes(image=DEFAULT_IMAGE, cpu=2, memory=4096)
     @step
     def ingest(self):
+        """Load 10-K filings from local directory."""
         dataset_cfg = self.config["dataset"]
-        dataset = load_dataset(dataset_cfg["name"], split=dataset_cfg["split"])
-        limit = min(int(dataset_cfg["doc_limit"]), len(dataset))
-        dataset = dataset.select(range(limit))
-
-        docs = []
-        for idx, row in enumerate(dataset):
-            text_field = pick_field(row, dataset_cfg["text_field_candidates"])
-            if not text_field:
-                continue
-            doc_id_field = pick_field(row, dataset_cfg["id_field_candidates"])
-            doc_id = row.get(doc_id_field) if doc_id_field else f"doc-{idx}"
-            docs.append({"id": str(doc_id), "text": row[text_field]})
-
+        source_dir = dataset_cfg.get("source_dir", "data_pipeline/10k_filings")
+        
+        docs = load_local_10k_filings(source_dir)
+        
+        # Apply limit if specified
+        limit = dataset_cfg.get("doc_limit")
+        if limit and limit < len(docs):
+            docs = docs[:limit]
+        
+        print(f"Loaded {len(docs)} documents from {source_dir}")
+        for doc in docs:
+            print(f"  - {doc['id']}: {doc.get('company', 'Unknown')} ({len(doc['text']):,} chars)")
+        
         self.docs = docs
         self.next(self.parse)
 

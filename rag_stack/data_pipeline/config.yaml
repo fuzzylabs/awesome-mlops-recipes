@@ -1,16 +1,7 @@
 dataset:
-  name: Linq-AI-Research/FinDER
-  split: train
-  doc_limit: 50
-  text_field_candidates:
-    - document
-    - doc
-    - text
-    - content
-  id_field_candidates:
-    - doc_id
-    - id
-    - document_id
+  # Local 10-K filings directory (run `uv run data_pipeline/fetch_10k.py` first)
+  source_dir: data_pipeline/10k_filings
+  doc_limit: 10  # Max documents to process
 
 chunking:
   chunk_size: 800

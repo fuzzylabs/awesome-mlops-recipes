@@ -40,7 +40,6 @@ Cook Time: ~1-2 hours (excluding model download and indexing)
 │   ├── vllm/              # vLLM deployment (Part 1)
 │   ├── chroma/            # Chroma deployment (Part 1)
 │   ├── rag-api/           # RAG API deployment (Part 1)
-│   ├── metaflow/          # Metaflow deployment (Part 1)
 │   ├── ray-serve/          # Ray Serve deployment (Part 2)
 │   ├── monitoring/         # Prometheus + Grafana (Part 2)
 │   └── locust/             # Locust load testing (Part 2)
@@ -55,12 +54,12 @@ https://github.com/fuzzylabs/awesome-mlops-recipes-iac
 
 Expected resources:
 - EKS cluster (CPU + GPU node group)
-- RDS PostgreSQL (shared between MLflow and Metaflow, two databases)
+- RDS PostgreSQL (MLflow backend)
 - S3 bucket (MLflow artifacts + Chroma snapshots)
 - ECR repositories (rag-api, rag-vllm-server, rag-metaflow, rag-rayserve)
 - VPC + IAM roles for service access
 
-Part 2 reuses the same AWS resources. The feedback loop can share the existing RDS instance (or use a separate database if you prefer).
+Part 2 reuses the same AWS resources.
 
 ## Prerequisites
 
@@ -86,7 +85,6 @@ Expected outputs for the `rag_stack` stack:
 - `ragRayserveEcrUrl` (Part 2)
 - `mlflowS3Bucket`
 - `mlflowS3RoleArn`
-- `metaflowS3RoleArn`
 - `chromaSnapshotRoleArn`
 - `mlflowDbEndpoint`
 - `mlflowDbName`
@@ -100,23 +98,17 @@ pulumi config get mlflowDbPassword
 ECR image URIs:
 - `k8s/vllm/deployment.yaml` -> `ragVllmServerEcrUrl`
 - `k8s/rag-api/deployment.yaml` -> `ragApiEcrUrl`
-- `k8s/metaflow/deployment.yaml` -> `ragMetaflowEcrUrl`
 - `k8s/ray-serve/rayservice.yaml` -> `ragRayserveEcrUrl` (Part 2)
 
 S3 bucket + prefix:
 - `data_pipeline/config.yaml` -> `s3.bucket`, `s3.prefix` (use `mlflowS3Bucket`, `rag-stack/chroma-snapshots`)
 - `k8s/chroma/snapshot-job.yaml` -> `S3_BUCKET` and `S3_PREFIX` (use `mlflowS3Bucket`, `rag-stack/chroma-snapshots`)
 - `k8s/chroma/restore-job.yaml` -> `S3_BUCKET` and `S3_PREFIX` (use `mlflowS3Bucket`, `rag-stack/chroma-snapshots`)
-- `k8s/metaflow/configmap.yaml` -> `METAFLOW_DATASTORE_SYSROOT_S3`, `METAFLOW_DATATOOLS_SYSROOT_S3` (use `mlflowS3Bucket`)
 
 RDS + credentials:
 - `helm/mlflow/mlflow.env` -> `mlflowDbEndpoint`, `mlflowDbName`, `mlflowDbUsername` + `mlflowDbPassword`
-- `k8s/metaflow/configmap.yaml` -> `MF_METADATA_DB_HOST`, `MF_METADATA_DB_USER`, `MF_METADATA_DB_NAME` (use `mlflowDbEndpoint`, `mlflowDbUsername`, set DB name to `metaflow`)
-- `k8s/metaflow/secret.yaml` -> `MF_METADATA_DB_PSWD` (use `mlflowDbPassword`)
-- Create the `metaflow` database on the shared RDS instance (separate from `mlflow`)
 
 IRSA role ARNs:
-- `k8s/metaflow/serviceaccount.yaml` -> `metaflowS3RoleArn`
 - `k8s/chroma/serviceaccount.yaml` -> `chromaSnapshotRoleArn`
 - `helm/mlflow/mlflow.env` -> `mlflowS3RoleArn`
 
@@ -124,11 +116,11 @@ Other placeholders:
 - `src/config.yaml` -> `generation.base_url` (Part 1: vLLM service; Part 2: Ray Serve URL)
 - `src/config.yaml` -> `guardrails.financial_advice_enabled` (Part 2 only; keep `false` for Part 1)
 - `k8s/monitoring/values.yaml` -> `grafana.adminPassword` (Part 2)
-- `FEEDBACK_DB_DSN` -> Postgres DSN for the shared RDS instance (Part 2; use the existing `metaflow` database unless you create a separate one)
+- `FEEDBACK_DB_DSN` -> Postgres DSN for the RDS instance (Part 2)
 
 ## Part 1: Prototype Quick Start
 
-Complete these steps for the prototype. Stop after Step 8 if you do not want the production add-ons.
+Complete these steps for the prototype. Stop after Step 7 if you do not want the production add-ons.
 
 ### 1. Deploy MLflow
 
@@ -144,39 +136,7 @@ cd ../..
 make deploy-mlflow
 ```
 
-### 2. Deploy Metaflow (metadata service + UI)
-
-Metaflow runs as a service in Kubernetes and uses the shared RDS instance. Build and push the lightweight service image first:
-```bash
-make build-metaflow-service-image
-```
-
-This builds a minimal image (~200 MB) with just Metaflow. The full pipeline image (`make build-pipeline-image`) is only needed later when running the data pipeline.
-
-Then configure and deploy. Set the required environment variables from your Pulumi outputs,:
-```bash
-cd /path/to/awesome-mlops-recipes-iac/rag_stack/pulumi
-export METAFLOW_S3_BUCKET=$(pulumi stack output mlflowS3Bucket)
-export METAFLOW_RDS_ENDPOINT=$(pulumi stack output mlflowDbEndpoint)
-export METAFLOW_DB_PASSWORD=$(pulumi config get mlflowDbPassword)
-export METAFLOW_S3_ROLE_ARN=$(pulumi stack output metaflowS3RoleArn)
-export RAG_METAFLOW_ECR_URL=$(pulumi stack output ragMetaflowEcrUrl)
-cd /path/to/awesome-mlops-recipes/rag_stack
-make configure-metaflow
-make setup-metaflow
-```
-
-Wait for the pod to be ready:
-```bash
-make wait-metaflow
-```
-
-Then port-forward the service for local access:
-```bash
-make portforward-metaflow
-```
-
-### 3. Register the RAG system prompt
+### 2. Register the RAG system prompt
 
 Port-forward MLflow in a separate terminal:
 ```bash
@@ -190,7 +150,7 @@ make create-new-prompt
 
 This registers the Part 1 prompt. Part 2 updates it with business-specific guardrails via the feedback loop or `make update-prompt`.
 
-### 4. Deploy vLLM
+### 3. Deploy vLLM
 
 Update the image in `k8s/vllm/deployment.yaml` to match your ECR repository before deploying.
 
@@ -199,35 +159,48 @@ make setup-vllm
 make wait-vllm
 ```
 
-### 5. Deploy Chroma
+### 4. Deploy Chroma
 
 ```bash
 make setup-chroma
 ```
 
-### 6. Build and run the Metaflow pipeline (manual trigger)
+### 5. Fetch 10-K filings and run the pipeline
 
+The pipeline ingests SEC 10-K filings from S&P 500 companies, chunks and embeds them, and indexes into Chroma.
+
+**Fetch 10-K filings from SEC EDGAR (run locally first):**
+```bash
+make fetch-10k-filings
+```
+
+This downloads 10-K filings for 5 sample companies (Apple, Microsoft, Google) from SEC EDGAR.
+
+**Update config** with your S3 bucket in `data_pipeline/config.yaml`:
+```yaml
+s3:
+  bucket: your-mlflow-bucket-name
+```
+
+**Build and run the pipeline:**
 ```bash
 make build-pipeline-image
 make run-pipeline
 ```
 
-Update `data_pipeline/config.yaml` with your S3 bucket before running the pipeline. The pipeline ingests a 50-document subset of FinDER, chunks and embeds, writes to Chroma, and snapshots the index to S3. It keeps the last 3 snapshots.
+Set `chroma.rebuild` to `false` in `data_pipeline/config.yaml` if you want to append to an existing collection instead of clearing it on each run.
 
-Set `chroma.rebuild` to `false` if you want to append to an existing collection instead of clearing it on each run.
-
-For Kubernetes execution, set these environment variables in your shell or Metaflow config:
-- `METAFLOW_KUBERNETES_IMAGE` (ECR image built by `make build-pipeline-image`)
-- `METAFLOW_SERVICE_URL` (Metaflow metadata service URL)
-- `METAFLOW_DEFAULT_METADATA=service`
-- `METAFLOW_DEFAULT_DATASTORE=s3`
-- `METAFLOW_DATASTORE_SYSROOT_S3` (e.g., `s3://<bucket>/metaflow`)
-- `METAFLOW_DATATOOLS_SYSROOT_S3` (e.g., `s3://<bucket>/metaflow`)
-- `CHROMA_PERSIST_DIR` (optional, path to Chroma data if you mount the PVC)
+For Kubernetes execution, set these environment variables:
+```bash
+export METAFLOW_KUBERNETES_IMAGE=<your-ecr-url>/rag-metaflow:latest
+export METAFLOW_DEFAULT_DATASTORE=s3
+export METAFLOW_DATASTORE_SYSROOT_S3=s3://<your-bucket>/metaflow
+export METAFLOW_DATATOOLS_SYSROOT_S3=s3://<your-bucket>/metaflow
+```
 
 If you do not mount the Chroma PVC into the pipeline pods, use the snapshot job in the next step.
 
-### 7. Snapshot or Restore Chroma
+### 6. Snapshot or Restore Chroma
 
 Snapshot the current Chroma index to S3 and keep the last 3 snapshots:
 ```bash
@@ -243,7 +216,7 @@ make restore-chroma
 kubectl scale deployment/chroma -n chroma --replicas=1
 ```
 
-### 8. Deploy the RAG API
+### 7. Deploy the RAG API
 
 Update the image in `k8s/rag-api/deployment.yaml` to match your ECR repository before deploying.
 
@@ -264,7 +237,7 @@ curl -X POST http://localhost:8080/query \
 
 These steps assume Part 1 is deployed and running.
 
-### 9. Put vLLM behind Ray Serve
+### 8. Put vLLM behind Ray Serve
 
 Install the KubeRay operator (once per cluster):
 ```bash
@@ -289,7 +262,7 @@ Rebuild and redeploy the RAG API to pick up the change:
 make setup-rag-api
 ```
 
-### 10. Enable monitoring (Prometheus + Grafana)
+### 9. Enable monitoring (Prometheus + Grafana)
 
 ```bash
 make setup-monitoring
@@ -303,7 +276,7 @@ make portforward-grafana
 make portforward-prometheus
 ```
 
-### 11. Run load tests with Locust
+### 10. Run load tests with Locust
 
 ```bash
 make setup-locust
@@ -312,7 +285,7 @@ make portforward-locust
 
 Edit `load_testing/locustfile.py` to adjust the workload before deploying.
 
-### 12. Feedback loop (manual trigger)
+### 11. Feedback loop (manual trigger)
 
 Create the feedback table on the shared RDS instance:
 ```bash
@@ -393,5 +366,4 @@ Run `make help` to see all commands.
 make teardown-rag-api
 make teardown-chroma
 make teardown-vllm
-make teardown-metaflow
 ```

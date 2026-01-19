@@ -1,4 +1,4 @@
-.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-chroma setup-rag-api build-metaflow-service-image configure-metaflow setup-metaflow build-pipeline-image run-pipeline build-eval-data snapshot-chroma restore-chroma setup-ray build-rayserve-image setup-monitoring setup-locust run-feedback-agent approve-feedback-prompt portforward-vllm portforward-chroma portforward-rag-api portforward-mlflow portforward-metaflow portforward-rayserve portforward-grafana portforward-prometheus portforward-locust eval-rag eval-rag-part1 eval-rag-part2 teardown-vllm teardown-chroma teardown-rag-api teardown-metaflow teardown-ray teardown-monitoring teardown-locust logs-vllm logs-rag-api logs-metaflow wait-mlflow wait-vllm wait-chroma wait-rag-api wait-metaflow status-mlflow status-vllm status-chroma status-rag-api status-metaflow help
+.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-chroma setup-rag-api build-pipeline-image run-pipeline build-eval-data snapshot-chroma restore-chroma setup-ray build-rayserve-image setup-monitoring setup-locust run-feedback-agent approve-feedback-prompt portforward-vllm portforward-chroma portforward-rag-api portforward-mlflow portforward-rayserve portforward-grafana portforward-prometheus portforward-locust eval-rag eval-rag-part1 eval-rag-part2 teardown-vllm teardown-chroma teardown-rag-api teardown-ray teardown-monitoring teardown-locust logs-vllm logs-rag-api wait-mlflow wait-vllm wait-chroma wait-rag-api status-mlflow status-vllm status-chroma status-rag-api help
 
 # Deploy MLflow
 deploy-mlflow:
@@ -31,21 +31,10 @@ setup-chroma:
 	@echo "Deploying Chroma to Kubernetes..."
 	cd k8s/chroma && ./deploy.sh
 
-# Build lightweight Metaflow service image (metadata service only)
-build-metaflow-service-image:
-	@echo "Building lightweight Metaflow service image..."
-	cd k8s/metaflow && ./build-and-push.sh
-
-# Configure Metaflow manifests from environment variables
-configure-metaflow:
-	@echo "Configuring Metaflow manifests..."
-	@echo "Required env vars: METAFLOW_S3_BUCKET, METAFLOW_RDS_ENDPOINT, METAFLOW_DB_PASSWORD, METAFLOW_S3_ROLE_ARN, RAG_METAFLOW_ECR_URL"
-	cd k8s/metaflow && ./configure.sh
-
-# Setup Metaflow
-setup-metaflow:
-	@echo "Deploying Metaflow service..."
-	cd k8s/metaflow && ./deploy.sh
+# Fetch 10-K filings from SEC EDGAR
+fetch-10k-filings:
+	@echo "Fetching 10-K filings from SEC EDGAR..."
+	uv run python data_pipeline/fetch_10k.py --count 5
 
 # Build pipeline image for Metaflow
 build-pipeline-image:
@@ -114,10 +103,6 @@ portforward-rag-api:
 	@echo "Port forwarding RAG API service to localhost:8080..."
 	kubectl port-forward svc/rag-api 8080:8080 -n rag-api
 
-portforward-metaflow:
-	@echo "Port forwarding Metaflow service to localhost:8080..."
-	kubectl port-forward svc/metaflow 8080:8080 -n metaflow
-
 portforward-rayserve:
 	@echo "Port forwarding Ray Serve to localhost:8000..."
 	kubectl port-forward svc/rayserve-vllm-serve-svc 8000:8000 -n rayserve
@@ -176,10 +161,6 @@ teardown-rag-api:
 	@echo "Tearing down RAG API resources..."
 	cd k8s/rag-api && ./teardown.sh
 
-teardown-metaflow:
-	@echo "Tearing down Metaflow resources..."
-	cd k8s/metaflow && ./teardown.sh
-
 teardown-ray:
 	@echo "Tearing down Ray Serve..."
 	cd k8s/ray-serve && ./teardown.sh
@@ -201,10 +182,6 @@ logs-rag-api:
 	@echo "Streaming RAG API logs..."
 	kubectl logs -f deployment/rag-api -n rag-api
 
-logs-metaflow:
-	@echo "Streaming Metaflow logs..."
-	kubectl logs -f deployment/metaflow -n metaflow
-
 # Watch pod status
 wait-mlflow:
 	@echo "Watching MLflow pods..."
@@ -221,10 +198,6 @@ wait-chroma:
 wait-rag-api:
 	@echo "Watching RAG API pods..."
 	kubectl get pods -n rag-api -w
-
-wait-metaflow:
-	@echo "Watching Metaflow pods..."
-	kubectl get pods -n metaflow -w
 
 # Check pod status
 status-mlflow:
@@ -243,10 +216,6 @@ status-rag-api:
 	@echo "RAG API pod status:"
 	kubectl get pods -n rag-api
 
-status-metaflow:
-	@echo "Metaflow pod status:"
-	kubectl get pods -n metaflow
-
 # Help
 help:
 	@echo "Available targets:"
@@ -255,9 +224,7 @@ help:
 	@echo "  deploy-mlflow          - Deploy MLflow"
 	@echo "  create-new-prompt      - Register new system prompt (requires port-forward)"
 	@echo "  update-prompt          - Update prompt version (requires port-forward)"
-	@echo "  build-metaflow-service-image - Build lightweight Metaflow service image"
-	@echo "  configure-metaflow     - Configure Metaflow manifests from env vars"
-	@echo "  setup-metaflow         - Deploy Metaflow service"
+	@echo "  fetch-10k-filings      - Fetch 10-K filings from SEC EDGAR"
 	@echo "  build-pipeline-image   - Build and push Metaflow pipeline image"
 	@echo "  run-pipeline           - Run Metaflow pipeline (manual trigger)"
 	@echo "  build-eval-data        - Build RAGAS evaluation dataset"
@@ -276,7 +243,6 @@ help:
 	@echo "  portforward-vllm       - Port forward vLLM (localhost:8000)"
 	@echo "  portforward-chroma     - Port forward Chroma (localhost:8000)"
 	@echo "  portforward-rag-api    - Port forward RAG API (localhost:8080)"
-	@echo "  portforward-metaflow   - Port forward Metaflow (localhost:8080)"
 	@echo "  portforward-rayserve   - Port forward Ray Serve (localhost:8000)"
 	@echo "  portforward-grafana    - Port forward Grafana (localhost:3000)"
 	@echo "  portforward-prometheus - Port forward Prometheus (localhost:9090)"
@@ -294,23 +260,19 @@ help:
 	@echo "Monitoring:"
 	@echo "  logs-vllm              - Stream vLLM logs"
 	@echo "  logs-rag-api           - Stream RAG API logs"
-	@echo "  logs-metaflow          - Stream Metaflow logs"
 	@echo "  status-mlflow          - Check MLflow pod status"
 	@echo "  status-vllm            - Check vLLM pod status"
 	@echo "  status-chroma          - Check Chroma pod status"
 	@echo "  status-rag-api         - Check RAG API pod status"
-	@echo "  status-metaflow        - Check Metaflow pod status"
 	@echo "  wait-mlflow            - Watch MLflow pods (blocking)"
 	@echo "  wait-vllm              - Watch vLLM pods (blocking)"
 	@echo "  wait-chroma            - Watch Chroma pods (blocking)"
 	@echo "  wait-rag-api           - Watch RAG API pods (blocking)"
-	@echo "  wait-metaflow          - Watch Metaflow pods (blocking)"
 	@echo ""
 	@echo "Teardown:"
 	@echo "  teardown-vllm          - Remove vLLM deployment"
 	@echo "  teardown-chroma        - Remove Chroma deployment"
 	@echo "  teardown-rag-api       - Remove RAG API deployment"
-	@echo "  teardown-metaflow      - Remove Metaflow deployment"
 	@echo "  teardown-ray           - Remove Ray Serve deployment"
 	@echo "  teardown-monitoring    - Remove Prometheus + Grafana"
 	@echo "  teardown-locust        - Remove Locust"
