@@ -14,7 +14,7 @@ Create a simple feedback table on the shared RDS instance (reuse the existing `m
 Set the database connection string:
 
 ```bash
-export FEEDBACK_DB_DSN="postgresql://user:password@host:5432/metaflow"
+export FEEDBACK_DB_DSN="postgresql://user:password@host:5432/mlflow"
 ```
 
 If `FEEDBACK_DB_DSN` is not set, the agent falls back to `sample_feedback.jsonl`.
