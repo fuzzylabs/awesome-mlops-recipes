@@ -6,6 +6,7 @@ import json
 import re
 import time
 from pathlib import Path
+import csv
 
 import requests
 from bs4 import BeautifulSoup
@@ -25,6 +26,34 @@ SAMPLE_COMPANIES = [
     {"ticker": "AMZN", "cik": "0001018724", "name": "Amazon.com Inc."},
     {"ticker": "JPM", "cik": "0000019617", "name": "JPMorgan Chase & Co."},
 ]
+
+COMPANIES_PATH = Path(__file__).with_name("sp500_companies.csv")
+
+
+def _normalize_cik(value: str) -> str:
+    digits = re.sub(r"\D", "", str(value))
+    return digits.zfill(10)
+
+
+def load_companies() -> list[dict]:
+    """Load S&P 500 companies from CSV if provided; fall back to sample list."""
+    if not COMPANIES_PATH.exists():
+        return SAMPLE_COMPANIES
+
+    companies: list[dict] = []
+    with COMPANIES_PATH.open("r", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            ticker = (row.get("ticker") or "").strip()
+            cik = (row.get("cik") or "").strip()
+            name = (row.get("name") or "").strip()
+            if not ticker or not cik or not name:
+                continue
+            companies.append(
+                {"ticker": ticker, "cik": _normalize_cik(cik), "name": name}
+            )
+
+    return companies or SAMPLE_COMPANIES
 
 
 def get_10k_filings(cik: str, count: int = 1) -> list[dict]:
@@ -89,7 +118,8 @@ def fetch_sample_10k_filings(output_dir: str = "data_pipeline/10k_filings", num_
     
     documents = []
     
-    for company in SAMPLE_COMPANIES[:num_companies]:
+    companies = load_companies()
+    for company in companies[:num_companies]:
         print(f"\nFetching 10-K for {company['name']} ({company['ticker']})...")
         
         try:
