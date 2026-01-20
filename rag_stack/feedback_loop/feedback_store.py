@@ -1,6 +1,5 @@
 """Fetch feedback from Postgres or fallback to sample data."""
 
-from __future__ import annotations
 
 import json
 import os

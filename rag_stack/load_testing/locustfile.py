@@ -1,6 +1,5 @@
 """Locust workload for the RAG API."""
 
-from __future__ import annotations
 
 import random
 

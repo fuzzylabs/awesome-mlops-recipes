@@ -1,6 +1,5 @@
 """FastAPI server for the RAG stack."""
 
-from __future__ import annotations
 
 import time
 

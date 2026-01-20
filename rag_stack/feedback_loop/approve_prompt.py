@@ -1,6 +1,5 @@
 """Approve a proposed prompt version in MLflow."""
 
-from __future__ import annotations
 
 import os
 

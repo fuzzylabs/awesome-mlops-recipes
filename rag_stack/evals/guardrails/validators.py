@@ -1,6 +1,5 @@
 """Guardrails AI validators for RAG guardrail checks."""
 
-from __future__ import annotations
 
 from guardrails.validators import FailResult, PassResult, Validator, register_validator
 

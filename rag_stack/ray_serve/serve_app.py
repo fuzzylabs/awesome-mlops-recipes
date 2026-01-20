@@ -1,6 +1,5 @@
 """Ray Serve proxy that forwards OpenAI-compatible requests to vLLM."""
 
-from __future__ import annotations
 
 import os
 

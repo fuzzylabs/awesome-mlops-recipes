@@ -1,6 +1,5 @@
 """Simple jailbreak guardrail checks against the RAG API."""
 
-from __future__ import annotations
 
 import json
 import os

@@ -1,6 +1,5 @@
 """Runtime guardrails for the RAG API."""
 
-from __future__ import annotations
 
 import re
 
