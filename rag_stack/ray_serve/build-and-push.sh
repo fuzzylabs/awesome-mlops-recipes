@@ -22,11 +22,11 @@ echo "Image: ${FULL_IMAGE_NAME}"
 echo ""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$SCRIPT_DIR"
 
 echo "Building Docker image..."
 docker buildx build --platform linux/amd64 \
-    -f ray_serve/Dockerfile \
+    -f Dockerfile \
     -t "${FULL_IMAGE_NAME}" \
     -t "${FULL_IMAGE_NAME_LATEST}" \
     --load .

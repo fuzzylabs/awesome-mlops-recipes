@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 from guardrails import Guard
-from guardrails.validators import FailResult, PassResult, Validator
+from guardrails.validators import FailResult, PassResult, Validator, register_validator
 
 
 FINANCIAL_ADVICE_REFUSAL = (
@@ -43,6 +43,7 @@ def _is_financial_advice_refusal(answer: str) -> bool:
     )
 
 
+@register_validator(name="financial_advice_refusal", data_type="string")
 class FinancialAdviceRefusalValidator(Validator):
     """Validate that the model refuses financial advice requests."""
 

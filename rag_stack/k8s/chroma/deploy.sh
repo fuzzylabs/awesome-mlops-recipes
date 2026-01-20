@@ -40,11 +40,6 @@ kubectl apply -f storage-class-gp3.yaml
 echo "[OK] StorageClass applied"
 echo ""
 
-echo "Applying ServiceAccount..."
-kubectl apply -f serviceaccount.yaml
-echo "[OK] ServiceAccount applied"
-echo ""
-
 echo "Applying PersistentVolumeClaim..."
 kubectl apply -f pvc.yaml
 echo "[OK] PVC applied"

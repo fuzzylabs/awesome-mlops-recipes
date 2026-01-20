@@ -55,7 +55,7 @@ https://github.com/fuzzylabs/awesome-mlops-recipes-iac
 Expected resources:
 - EKS cluster (CPU + GPU node group)
 - RDS PostgreSQL (MLflow backend)
-- S3 bucket (MLflow artifacts + Chroma snapshots)
+- S3 bucket (MLflow artifacts)
 - ECR repositories (rag-api, rag-vllm-server, rag-metaflow, rag-rayserve)
 - VPC + IAM roles for service access
 
@@ -85,7 +85,6 @@ Expected outputs for the `rag_stack` stack:
 - `ragRayserveEcrUrl` (Part 2)
 - `mlflowS3Bucket`
 - `mlflowS3RoleArn`
-- `chromaSnapshotRoleArn`
 - `mlflowDbEndpoint`
 - `mlflowDbName`
 - `mlflowDbUsername`
@@ -100,16 +99,10 @@ ECR image URIs:
 - `k8s/rag-api/deployment.yaml` -> `ragApiEcrUrl`
 - `k8s/ray-serve/rayservice.yaml` -> `ragRayserveEcrUrl` (Part 2)
 
-S3 bucket + prefix:
-- `data_pipeline/config.yaml` -> `s3.bucket`, `s3.prefix` (use `mlflowS3Bucket`, `rag-stack/chroma-snapshots`)
-- `k8s/chroma/snapshot-job.yaml` -> `S3_BUCKET` and `S3_PREFIX` (use `mlflowS3Bucket`, `rag-stack/chroma-snapshots`)
-- `k8s/chroma/restore-job.yaml` -> `S3_BUCKET` and `S3_PREFIX` (use `mlflowS3Bucket`, `rag-stack/chroma-snapshots`)
-
 RDS + credentials:
 - `helm/mlflow/mlflow.env` -> `mlflowDbEndpoint`, `mlflowDbName`, `mlflowDbUsername` + `mlflowDbPassword`
 
 IRSA role ARNs:
-- `k8s/chroma/serviceaccount.yaml` -> `chromaSnapshotRoleArn`
 - `helm/mlflow/mlflow.env` -> `mlflowS3RoleArn`
 
 Other placeholders:
@@ -120,7 +113,7 @@ Other placeholders:
 
 ## Part 1: Prototype Quick Start
 
-Complete these steps for the prototype. Stop after Step 7 if you do not want the production add-ons.
+Complete these steps for the prototype. Stop after Step 6 if you do not want the production add-ons.
 
 ### 1. Deploy MLflow
 
@@ -134,6 +127,11 @@ Edit mlflow.env with your values, then:
 source mlflow.env
 cd ../..
 make deploy-mlflow
+```
+
+Wait for MLFlow to finish deploying:
+```bash
+make wait-mlflow
 ```
 
 ### 2. Register the RAG system prompt
@@ -169,54 +167,28 @@ make setup-chroma
 
 The pipeline ingests SEC 10-K filings from S&P 500 companies, chunks and embeds them, and indexes into Chroma.
 
-**Fetch 10-K filings from SEC EDGAR (run locally first):**
-```bash
-make fetch-10k-filings
-```
-
-This downloads 10-K filings for 5 sample companies (Apple, Microsoft, Google) from SEC EDGAR.
-
-**Update config** with your S3 bucket in `data_pipeline/config.yaml`:
+By default, the pipeline fetches 10-K filings on start. Control this in `data_pipeline/config.yaml`:
 ```yaml
-s3:
-  bucket: your-mlflow-bucket-name
+dataset:
+  fetch_on_start: true
+  fetch_count: 5
 ```
 
-**Build and run the pipeline:**
-```bash
-make build-pipeline-image
-make run-pipeline
-```
+You can still run `make fetch-10k-filings` if you want to fetch files ahead of time and set `fetch_on_start: false`.
 
 Set `chroma.rebuild` to `false` in `data_pipeline/config.yaml` if you want to append to an existing collection instead of clearing it on each run.
 
-For Kubernetes execution, set these environment variables:
+Port-forward Chroma and point the pipeline at localhost:
 ```bash
-export METAFLOW_KUBERNETES_IMAGE=<your-ecr-url>/rag-metaflow:latest
-export METAFLOW_DEFAULT_DATASTORE=s3
-export METAFLOW_DATASTORE_SYSROOT_S3=s3://<your-bucket>/metaflow
-export METAFLOW_DATATOOLS_SYSROOT_S3=s3://<your-bucket>/metaflow
+make portforward-chroma
 ```
 
-If you do not mount the Chroma PVC into the pipeline pods, use the snapshot job in the next step.
-
-### 6. Snapshot or Restore Chroma
-
-Snapshot the current Chroma index to S3 and keep the last 3 snapshots:
+**Run the pipeline locally:**
 ```bash
-make snapshot-chroma
+uv run python data_pipeline/flow.py run
 ```
 
-Update the bucket and prefix in `k8s/chroma/snapshot-job.yaml` and `k8s/chroma/restore-job.yaml` before running. The snapshot and restore jobs use the `chroma-snapshot` service account in `k8s/chroma/serviceaccount.yaml` to access S3 via IRSA. If your AWS CLI image lacks `tar`, switch the job image to one that includes it.
-
-Restore the latest snapshot (scale down Chroma first):
-```bash
-kubectl scale deployment/chroma -n chroma --replicas=0
-make restore-chroma
-kubectl scale deployment/chroma -n chroma --replicas=1
-```
-
-### 7. Deploy the RAG API
+### 6. Deploy the RAG API
 
 Update the image in `k8s/rag-api/deployment.yaml` to match your ECR repository before deploying.
 
@@ -237,7 +209,7 @@ curl -X POST http://localhost:8080/query \
 
 These steps assume Part 1 is deployed and running.
 
-### 8. Put vLLM behind Ray Serve
+### 7. Put vLLM behind Ray Serve
 
 Install the KubeRay operator (once per cluster):
 ```bash
@@ -262,7 +234,9 @@ Rebuild and redeploy the RAG API to pick up the change:
 make setup-rag-api
 ```
 
-### 9. Enable monitoring (Prometheus + Grafana)
+### 8. Enable monitoring (Prometheus + Grafana)
+
+Edit `rag_stack/k8s/monitoring/values.yaml` to set up your Grafana dashboard password.
 
 ```bash
 make setup-monitoring
@@ -276,23 +250,48 @@ make portforward-grafana
 make portforward-prometheus
 ```
 
-### 10. Run load tests with Locust
+You can now visit `http://localhost:3000/` to view the dashboard.
+
+### 9. Run load tests with Locust
 
 ```bash
 make setup-locust
+make wait-locust
+```
+
+Wait until locust is deployed, then:
+```bash
 make portforward-locust
 ```
 
 Edit `load_testing/locustfile.py` to adjust the workload before deploying.
 
-### 11. Feedback loop (manual trigger)
+Visit `http://localhost:8089/` to start the loadtest.
+
+### 10. Feedback loop (manual trigger)
 
 Create the feedback table on the shared RDS instance:
+
+Start a disposable psql pod, make sure you replace `<mlflowDbPasswor>` and `<mlflowDbEndpoint>` with values from your pulumi output.
 ```bash
-psql "$FEEDBACK_DB_DSN" -f feedback_loop/schema.sql
+kubectl run -it --rm psql \
+  --image=postgres:16 \
+  --restart=Never \
+  --env="FEEDBACK_DB_DSN=postgresql://mlflow:<mlflowDbPasswor>@<mlflowDbEndpoint>:5432/mlflow" \
+  -- bash
 ```
 
-Run the feedback agent to propose a prompt update:
+In another terminal, copy the schema into the pod:
+```bash
+kubectl cp feedback_loop/schema.sql psql:/tmp/schema.sql
+```
+
+Back in the pod terminal, run psql with the DSN:
+```bash
+psql "$FEEDBACK_DB_DSN" -f /tmp/schema.sql
+```
+
+Run the feedback agent to propose a prompt update, make sure you have mlflow port-forwarded:
 ```bash
 export OPENAI_API_KEY="local"
 make run-feedback-agent
@@ -307,7 +306,25 @@ make approve-feedback-prompt
 
 ### Part 1: RAGAS + basic guardrails
 
-Run the prototype evaluation suite:
+Run the prototype evaluation suite, first port-forward vllm:
+```bash
+export RAGAS_LLM_BASE_URL="http://localhost:8000/v1"
+export OPENAI_API_KEY="local"
+
+make portforward-vllm
+```
+
+We need to port-forward mlflow to log the evaluation:
+```bash
+make portforward-mlflow
+```
+
+We also need to port-forward rag-api to for guardrail eveluation:
+```bash
+make portforward-rag-api
+```
+
+Then run eval:
 ```bash
 make eval-rag-part1
 ```

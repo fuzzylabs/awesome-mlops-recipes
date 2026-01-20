@@ -13,7 +13,7 @@ ENV UV_TOOL_BIN_DIR=/usr/local/bin
 COPY pyproject.toml ./
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --no-dev
+    uv sync --group prod --no-dev
 
 COPY src/ ./src/
 

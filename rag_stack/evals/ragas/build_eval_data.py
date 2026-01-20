@@ -31,6 +31,8 @@ def main() -> None:
     dataset = load_dataset(ds_cfg["name"], split=ds_cfg["split"])
     limit = min(int(ds_cfg["limit"]), len(dataset))
     dataset = dataset.select(range(limit))
+    max_context_chars = int(ds_cfg.get("max_context_chars", 4000))
+    max_contexts = int(ds_cfg.get("max_contexts", 4))
 
     question_fields = ds_cfg["question_field_candidates"]
     answer_fields = ds_cfg["answer_field_candidates"]
@@ -47,12 +49,19 @@ def main() -> None:
         contexts = row.get(context_field, [])
         if isinstance(contexts, str):
             contexts = [contexts]
+        trimmed_contexts = []
+        for context in contexts:
+            if not context:
+                continue
+            trimmed_contexts.append(str(context)[:max_context_chars])
+            if len(trimmed_contexts) >= max_contexts:
+                break
 
         records.append(
             {
                 "question": row[question_field],
                 "answer": row.get(answer_field, ""),
-                "contexts": contexts,
+                "contexts": trimmed_contexts,
                 "ground_truth": row.get(answer_field, ""),
             }
         )

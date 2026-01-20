@@ -228,3 +228,6 @@ secret.yaml
 
 # 10-K filings
 **/10k_filings/
+
+# Metaflow
+.metaflow/

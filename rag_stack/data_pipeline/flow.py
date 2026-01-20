@@ -3,20 +3,16 @@
 from __future__ import annotations
 
 import json
-import os
-import tarfile
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import boto3
 import chromadb
 from bs4 import BeautifulSoup
-from metaflow import FlowSpec, Parameter, step, kubernetes
+from metaflow import FlowSpec, Parameter, step
 from sentence_transformers import SentenceTransformer
 import yaml
 
-DEFAULT_IMAGE = os.getenv("METAFLOW_KUBERNETES_IMAGE", "rag-metaflow:latest")
+from fetch_10k import fetch_sample_10k_filings
 
 
 def load_config(path: str) -> dict[str, Any]:
@@ -78,9 +74,18 @@ class RagIngestFlow(FlowSpec):
     @step
     def start(self):
         self.config = load_config(self.config_path)
+        self.next(self.fetch)
+
+    @step
+    def fetch(self):
+        dataset_cfg = self.config["dataset"]
+        if dataset_cfg.get("fetch_on_start", False):
+            source_dir = dataset_cfg.get("source_dir", "data_pipeline/10k_filings")
+            fetch_count = int(dataset_cfg.get("fetch_count", 3))
+            print(f"Fetching {fetch_count} 10-K filings into {source_dir}...")
+            fetch_sample_10k_filings(output_dir=source_dir, num_companies=fetch_count)
         self.next(self.ingest)
 
-    @kubernetes(image=DEFAULT_IMAGE, cpu=2, memory=4096)
     @step
     def ingest(self):
         """Load 10-K filings from local directory."""
@@ -101,7 +106,6 @@ class RagIngestFlow(FlowSpec):
         self.docs = docs
         self.next(self.parse)
 
-    @kubernetes(image=DEFAULT_IMAGE, cpu=2, memory=4096)
     @step
     def parse(self):
         parsed = []
@@ -110,7 +114,6 @@ class RagIngestFlow(FlowSpec):
         self.docs = parsed
         self.next(self.chunk)
 
-    @kubernetes(image=DEFAULT_IMAGE, cpu=2, memory=4096)
     @step
     def chunk(self):
         chunk_cfg = self.config["chunking"]
@@ -132,17 +135,15 @@ class RagIngestFlow(FlowSpec):
         self.chunks = chunks
         self.next(self.embed)
 
-    @kubernetes(image=DEFAULT_IMAGE, cpu=4, memory=8192)
     @step
     def embed(self):
         embed_cfg = self.config["embeddings"]
         embedder = SentenceTransformer(embed_cfg["model"])
         self.embeddings = [embedder.encode(chunk["text"], normalize_embeddings=True).tolist() for chunk in self.chunks]
-        self.next(self.index)
+        self.next(self.index_chunks)
 
-    @kubernetes(image=DEFAULT_IMAGE, cpu=2, memory=4096)
     @step
-    def index(self):
+    def index_chunks(self):
         chroma_cfg = self.config["chroma"]
         client = chromadb.HttpClient(host=chroma_cfg["host"], port=chroma_cfg["port"])
         collection = client.get_or_create_collection(name=chroma_cfg["collection"])
@@ -157,44 +158,7 @@ class RagIngestFlow(FlowSpec):
             documents=[chunk["text"] for chunk in self.chunks],
             metadatas=[chunk["metadata"] for chunk in self.chunks],
         )
-        self.next(self.snapshot)
-
-    @kubernetes(image=DEFAULT_IMAGE, cpu=1, memory=2048)
-    @step
-    def snapshot(self):
-        s3_cfg = self.config["s3"]
-        persist_dir = os.getenv("CHROMA_PERSIST_DIR")
-        if not persist_dir:
-            print("CHROMA_PERSIST_DIR not set, skipping snapshot.")
-            self.next(self.end)
-            return
-
-        persist_path = Path(persist_dir)
-        if not persist_path.exists():
-            print(f"Chroma persist dir not found: {persist_path}")
-            self.next(self.end)
-            return
-
-        snapshot_name = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-        archive_path = Path(f"/tmp/chroma-snapshot-{snapshot_name}.tar.gz")
-        with tarfile.open(archive_path, "w:gz") as archive:
-            archive.add(persist_path, arcname="chroma")
-
-        s3 = boto3.client("s3")
-        key_prefix = s3_cfg["prefix"].rstrip("/")
-        key = f"{key_prefix}/{snapshot_name}.tar.gz"
-        s3.upload_file(str(archive_path), s3_cfg["bucket"], key)
-
-        self._cleanup_snapshots(s3, s3_cfg, key_prefix)
         self.next(self.end)
-
-    def _cleanup_snapshots(self, s3, s3_cfg: dict[str, Any], key_prefix: str) -> None:
-        response = s3.list_objects_v2(Bucket=s3_cfg["bucket"], Prefix=key_prefix)
-        objects = response.get("Contents", [])
-        objects.sort(key=lambda item: item["LastModified"], reverse=True)
-        keep = int(s3_cfg.get("keep_last", 3))
-        for obj in objects[keep:]:
-            s3.delete_object(Bucket=s3_cfg["bucket"], Key=obj["Key"])
 
     @step
     def end(self):

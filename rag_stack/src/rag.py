@@ -64,7 +64,7 @@ class RagService:
         result = self._collection.query(
             query_embeddings=[query_embedding],
             n_results=self.config.retrieval.top_k,
-            include=["documents", "metadatas", "ids"],
+            include=["documents", "metadatas"],
         )
         retrieved_count = len(result.get("ids", [[]])[0])
         chunks: list[RetrievedChunk] = []

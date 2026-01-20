@@ -1,4 +1,4 @@
-.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-chroma setup-rag-api build-pipeline-image run-pipeline build-eval-data snapshot-chroma restore-chroma setup-ray build-rayserve-image setup-monitoring setup-locust run-feedback-agent approve-feedback-prompt portforward-vllm portforward-chroma portforward-rag-api portforward-mlflow portforward-rayserve portforward-grafana portforward-prometheus portforward-locust eval-rag eval-rag-part1 eval-rag-part2 teardown-vllm teardown-chroma teardown-rag-api teardown-ray teardown-monitoring teardown-locust logs-vllm logs-rag-api wait-mlflow wait-vllm wait-chroma wait-rag-api status-mlflow status-vllm status-chroma status-rag-api help
+.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-chroma setup-rag-api build-pipeline-image run-pipeline build-eval-data setup-ray build-rayserve-image setup-monitoring setup-locust run-feedback-agent approve-feedback-prompt portforward-vllm portforward-chroma portforward-rag-api portforward-mlflow portforward-rayserve portforward-grafana portforward-prometheus portforward-locust eval-rag eval-rag-part1 eval-rag-part2 teardown-vllm teardown-chroma teardown-rag-api teardown-ray teardown-monitoring teardown-locust logs-vllm logs-rag-api wait-mlflow wait-vllm wait-chroma wait-rag-api wait-locust status-mlflow status-vllm status-chroma status-rag-api status-locust help
 
 # Deploy MLflow
 deploy-mlflow:
@@ -80,11 +80,11 @@ setup-locust:
 # Feedback loop
 run-feedback-agent:
 	@echo "Running feedback loop agent..."
-	uv run feedback_loop/agent.py
+	uv run python -m feedback_loop.agent
 
 approve-feedback-prompt:
 	@echo "Approving prompt in MLflow..."
-	uv run feedback_loop/approve_prompt.py
+	uv run python -m feedback_loop.approve_prompt
 
 # Port forward services
 portforward-mlflow:
@@ -124,29 +124,14 @@ eval-rag-part1:
 	@echo "Running Part 1 RAG evaluation suite..."
 	uv run python evals/ragas/build_eval_data.py
 	uv run python evals/ragas/run.py
-	uv run python evals/guardrails/hallucination.py
-	uv run python evals/guardrails/jailbreak.py
+	uv run python -m evals.guardrails.hallucination
+	uv run python -m evals.guardrails.jailbreak
 
 eval-rag-part2: export RUN_FINANCIAL_ADVICE_GUARDRAIL=1
 eval-rag-part2: eval-rag-part1
 	@echo "Running Part 2 guardrails (financial advice)..."
 
 eval-rag: eval-rag-part2
-
-# Snapshot and restore Chroma
-snapshot-chroma:
-	@echo "Creating Chroma snapshot..."
-	kubectl delete job/chroma-snapshot -n chroma --ignore-not-found
-	kubectl apply -f k8s/chroma/snapshot-job.yaml
-	kubectl wait --for=condition=complete job/chroma-snapshot -n chroma --timeout=10m
-	kubectl delete job/chroma-snapshot -n chroma
-
-restore-chroma:
-	@echo "Restoring Chroma snapshot..."
-	kubectl delete job/chroma-restore -n chroma --ignore-not-found
-	kubectl apply -f k8s/chroma/restore-job.yaml
-	kubectl wait --for=condition=complete job/chroma-restore -n chroma --timeout=10m
-	kubectl delete job/chroma-restore -n chroma
 
 # Teardown resources
 teardown-vllm:
@@ -198,6 +183,10 @@ wait-chroma:
 wait-rag-api:
 	@echo "Watching RAG API pods..."
 	kubectl get pods -n rag-api -w
+
+wait-locust:
+	@echo "Watching Locust pods..."
+	kubectl get pods -n locust -w
 
 # Check pod status
 status-mlflow:
@@ -253,9 +242,6 @@ help:
 	@echo "  eval-rag-part2         - Run Part 2 evals (Part 1 + financial advice)"
 	@echo "  eval-rag               - Run full eval suite (alias for Part 2)"
 	@echo ""
-	@echo "Chroma Snapshot:"
-	@echo "  snapshot-chroma        - Snapshot Chroma to S3"
-	@echo "  restore-chroma         - Restore latest Chroma snapshot"
 	@echo ""
 	@echo "Monitoring:"
 	@echo "  logs-vllm              - Stream vLLM logs"

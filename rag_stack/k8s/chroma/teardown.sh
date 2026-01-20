@@ -14,9 +14,6 @@ NAMESPACE="chroma"
 kubectl delete -f service.yaml --ignore-not-found
 kubectl delete -f deployment.yaml --ignore-not-found
 kubectl delete -f pvc.yaml --ignore-not-found
-kubectl delete -f serviceaccount.yaml --ignore-not-found
-kubectl delete -f snapshot-job.yaml --ignore-not-found
-kubectl delete -f restore-job.yaml --ignore-not-found
 
 if kubectl get namespace "$NAMESPACE" &> /dev/null; then
     kubectl delete namespace "$NAMESPACE"
