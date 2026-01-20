@@ -1,7 +1,5 @@
 """Fetch 10-K filings from SEC EDGAR for S&P 500 companies."""
 
-from __future__ import annotations
-
 import json
 import re
 import time
