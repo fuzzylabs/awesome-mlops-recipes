@@ -77,7 +77,7 @@ If you only run Part 1, you can ignore the Part 2 ContextForge placeholders.
 
 The MLflow database password is stored in Pulumi config:
 ```bash
-pulumi config get mlflowDbPassword --show-secrets
+pulumi config get mlflowDbPassword
 ```
 
 **Secrets & config files to edit:**
