@@ -1,4 +1,4 @@
-.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm deploy-jaeger setup-agent portforward-vllm portforward-jaeger portforward-agent portforward-mlflow eval-review-quality teardown-vllm teardown-agent logs-agent logs-vllm restart-agent wait-mlflow wait-vllm wait-agent status-mlflow status-vllm status-agent help
+.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm deploy-jaeger setup-agent deploy-context-forge portforward-vllm portforward-jaeger portforward-agent portforward-mlflow portforward-context-forge eval-review-quality teardown-vllm teardown-agent teardown-context-forge logs-agent logs-vllm logs-context-forge restart-agent wait-mlflow wait-vllm wait-agent wait-context-forge status-mlflow status-vllm status-agent status-context-forge help
 
 # Deploy MLflow
 deploy-mlflow:
@@ -31,6 +31,11 @@ deploy-jaeger:
 	@echo "Deploying Jaeger backend to Kubernetes..."
 	cd k8s/logfire_backend && ./deploy.sh
 
+# Setup ContextForge (deploy)
+deploy-context-forge:
+	@echo "Deploying ContextForge gateway..."
+	cd k8s/context_forge && ./deploy.sh
+
 # Setup agent (build + push + deploy)
 setup-agent:
 	@echo "Building and pushing agent image..."
@@ -56,6 +61,10 @@ portforward-mlflow:
 	@echo "Port forwarding MLflow service to localhost:5000..."
 	kubectl port-forward svc/mlflow 5000:5000 -n mlflow
 
+portforward-context-forge:
+	@echo "Port forwarding ContextForge service to localhost:4444..."
+	kubectl port-forward svc/context-forge 4444:4444 -n context-forge
+
 # Run evaluations
 eval-review-quality:
 	@echo "Running LLM judge evaluation..."
@@ -70,6 +79,10 @@ teardown-agent:
 	@echo "Tearing down agent resources..."
 	cd k8s/agent && ./teardown.sh
 
+teardown-context-forge:
+	@echo "Tearing down ContextForge resources..."
+	cd k8s/context_forge && ./teardown.sh
+
 # View logs
 logs-agent:
 	@echo "Streaming agent logs..."
@@ -78,6 +91,10 @@ logs-agent:
 logs-vllm:
 	@echo "Streaming vLLM logs..."
 	kubectl logs -f deployment/qwen3 -n vllm
+
+logs-context-forge:
+	@echo "Streaming ContextForge logs..."
+	kubectl logs -f deployment/context-forge -n context-forge
 
 # Restart deployments
 restart-agent:
@@ -97,6 +114,10 @@ wait-agent:
 	@echo "Watching agent pods..."
 	kubectl get pods -n agent -w
 
+wait-context-forge:
+	@echo "Watching ContextForge pods..."
+	kubectl get pods -n context-forge -w
+
 # Check pod status
 status-mlflow:
 	@echo "MLflow pod status:"
@@ -110,6 +131,10 @@ status-agent:
 	@echo "Agent pod status:"
 	kubectl get pods -n agent
 
+status-context-forge:
+	@echo "ContextForge pod status:"
+	kubectl get pods -n context-forge
+
 # Help
 help:
 	@echo "Available targets:"
@@ -120,11 +145,13 @@ help:
 	@echo "  update-prompt        - Update prompt version (requires port-forward)"
 	@echo "  setup-vllm           - Build and deploy vLLM server"
 	@echo "  setup-agent          - Build and deploy PR review agent"
+	@echo "  deploy-context-forge - Deploy ContextForge gateway (Part 2)"
 	@echo ""
 	@echo "Port Forwarding:"
 	@echo "  portforward-mlflow   - Port forward MLflow (localhost:5000)"
 	@echo "  portforward-vllm     - Port forward vLLM (localhost:8000)"
 	@echo "  portforward-agent    - Port forward agent (localhost:8080)"
+	@echo "  portforward-context-forge - Port forward ContextForge (localhost:4444)"
 	@echo ""
 	@echo "Evaluation:"
 	@echo "  eval-review-quality  - Run LLM judge evaluation"
@@ -132,12 +159,15 @@ help:
 	@echo "Monitoring:"
 	@echo "  logs-vllm            - Stream vLLM logs"
 	@echo "  logs-agent           - Stream agent logs"
+	@echo "  logs-context-forge   - Stream ContextForge logs"
 	@echo "  status-mlflow        - Check MLflow pod status"
 	@echo "  status-vllm          - Check vLLM pod status"
 	@echo "  status-agent         - Check agent pod status"
+	@echo "  status-context-forge - Check ContextForge pod status"
 	@echo "  wait-mlflow          - Watch MLflow pods (blocking)"
 	@echo "  wait-vllm            - Watch vLLM pods (blocking)"
 	@echo "  wait-agent           - Watch agent pods (blocking)"
+	@echo "  wait-context-forge   - Watch ContextForge pods (blocking)"
 	@echo ""
 	@echo "Management:"
 	@echo "  restart-agent        - Restart agent deployment"
@@ -145,4 +175,4 @@ help:
 	@echo "Teardown:"
 	@echo "  teardown-vllm        - Remove vLLM deployment"
 	@echo "  teardown-agent       - Remove agent deployment"
-
+	@echo "  teardown-context-forge - Remove ContextForge deployment"

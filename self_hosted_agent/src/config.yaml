@@ -22,3 +22,14 @@ mlflow:
   prompt_name: "pr-review-agent-system-prompt"
   # Leave empty for latest version
   prompt_version: ""
+
+# MCP Configuration
+mcp:
+  # Optional gateway URL (ContextForge). Leave empty to use GitHub MCP directly.
+  gateway_url: ""
+  # Optional gateway auth token (Bearer) for ContextForge.
+  gateway_auth_token: ""
+  # Forward GitHub token as X-Upstream-Authorization when using the gateway.
+  gateway_forward_github_token: true
+  # Direct GitHub MCP URL for Part 1 prototype.
+  github_mcp_url: "https://api.githubcopilot.com/mcp/"

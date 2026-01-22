@@ -1,0 +1,94 @@
+plugins:
+  - name: "RateLimiterPlugin"
+    kind: "plugins.rate_limiter.rate_limiter.RateLimiterPlugin"
+    description: "Per-user/tenant/tool rate limits"
+    version: "0.1.0"
+    author: "ContextForge"
+    hooks: ["prompt_pre_fetch", "tool_pre_invoke"]
+    tags: ["limits", "throttle"]
+    mode: "enforce"
+    priority: 20
+    conditions: []
+    config:
+      by_user: "60/m"
+      by_tenant: "600/m"
+      by_tool:
+        search_pull_requests: "15/m"
+        pull_request_read: "120/m"
+        pull_request_review_write: "20/m"
+
+  - name: "SchemaGuardPlugin"
+    kind: "plugins.schema_guard.schema_guard.SchemaGuardPlugin"
+    description: "Validate tool args/results against simple schema"
+    version: "0.1.0"
+    author: "ContextForge"
+    hooks: ["tool_pre_invoke", "tool_post_invoke"]
+    tags: ["schema", "validation"]
+    mode: "permissive"
+    priority: 110
+    conditions: []
+    config:
+      arg_schemas:
+        search_pull_requests:
+          type: "object"
+          properties:
+            query:
+              type: "string"
+        pull_request_read:
+          type: "object"
+          properties:
+            owner:
+              type: "string"
+            repo:
+              type: "string"
+            pull_number:
+              type: "integer"
+            method:
+              type: "string"
+        pull_request_review_write:
+          type: "object"
+          properties:
+            owner:
+              type: "string"
+            repo:
+              type: "string"
+            pull_number:
+              type: "integer"
+            body:
+              type: "string"
+            event:
+              type: "string"
+      result_schemas:
+        pull_request_read:
+          anyOf:
+            - type: "string"
+              allOf:
+                - not:
+                    pattern: "Binary files"
+                - not:
+                    pattern: "GIT binary patch"
+                - pattern: "^diff --git "
+                - pattern: "^@@ "
+            - type: "array"
+            - type: "object"
+      block_on_violation: true
+
+  - name: "ToolsTelemetryExporter"
+    kind: "plugins.tools_telemetry_exporter.telemetry_exporter.ToolsTelemetryExporterPlugin"
+    description: "Export tool invocation telemetry to OpenTelemetry"
+    version: "0.1.0"
+    author: "ContextForge"
+    hooks: ["tool_pre_invoke", "tool_post_invoke"]
+    tags: ["telemetry", "observability", "opentelemetry"]
+    mode: "enforce"
+    priority: 200
+    conditions: []
+    config:
+      export_full_payload: true
+      max_payload_bytes_size: 10000
+
+plugin_settings:
+  parallel_execution_within_band: true
+  plugin_timeout: 30
+  fail_on_plugin_error: false
+  plugin_health_check_interval: 60
