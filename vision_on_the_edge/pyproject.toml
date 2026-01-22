@@ -20,4 +20,5 @@ dependencies = [
     "torchvision>=0.23.0",
     "zenml[server]>=0.82.0",
     "sng4onnx>=1.0.4",
+    "pip>=25.3",
 ]
