@@ -11,12 +11,6 @@ from pipelines.training_pipeline import training_pipeline
 from zenml.client import Client
 import os
 
-# load the experiment tracker configured in your active stack
-tracker = Client().active_stack.experiment_tracker
-
-os.environ["MLFLOW_TRACKING_USERNAME"] = tracker.config.tracking_username
-os.environ["MLFLOW_TRACKING_PASSWORD"] = tracker.config.tracking_password
-
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,7 +20,7 @@ def parse_args() -> argparse.Namespace:
         Parsed CLI arguments.
     """
     parser = argparse.ArgumentParser(description="Run the ZenML training pipeline.")
-    parser.add_argument("--num-epochs", type=int, default=3, help="Number of training epochs.")
+    parser.add_argument("--num-epochs", type=int, default=5, help="Number of training epochs.")
     parser.add_argument("--batch-size", type=int, default=16, help="Training batch size.")
     parser.add_argument("--learning-rate", type=float, default=0.001, help="Learning rate.")
     parser.add_argument("--bit-w", type=int, default=8, help="Quantisation bit width for weights.")
@@ -196,7 +190,24 @@ def main() -> None:
     """
     args = parse_args()
 
-    mlflow.set_tracking_uri(tracker.config.tracking_uri)
+    tracker = Client().active_stack.experiment_tracker
+    if tracker is None:
+        raise RuntimeError(
+            "No experiment tracker configured in the active ZenML stack. "
+            "Follow the README MLflow setup steps to register and activate the stack."
+        )
+
+    if tracker.config.tracking_username:
+        os.environ["MLFLOW_TRACKING_USERNAME"] = tracker.config.tracking_username
+    if tracker.config.tracking_password:
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = tracker.config.tracking_password
+
+    # The ZenML tracker is configured with host.docker.internal for Docker containers,
+    # but run.py executes on the host, so translate to localhost
+    tracking_uri = tracker.config.tracking_uri
+    if tracking_uri:
+        tracking_uri = tracking_uri.replace("host.docker.internal", "localhost")
+    mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment("vision-on-the-edge")
 
     if args.optuna_trials > 0:

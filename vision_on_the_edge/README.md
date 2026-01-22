@@ -10,20 +10,20 @@ This recipe gives you a concrete, reusable starting point for any project where 
 - **Deep learning framework**: [Pytorch](https://github.com/pytorch/pytorch)
 - **Quantisation aware training**: [Brevitas](https://xilinx.github.io/brevitas/v0.12.1/)
 - **Experiment tracking**: [MLflow](https://mlflow.org/)
-- **Pipeline orchestrator**: [ZenML](https://www.zenml.io/)
+- **Pipeline orchestrator**: [ZenML](https://www.zenml.io/) with local orchestrator
 - **Model conversion**: ONNX, onnx2tf, TensorFlow Lite
 - **Deployment**: [PlatformIO](https://platformio.org/)
 
 ## 🗄️ Project Structure
 
 ```
-.                   # This recipe
-├── run.py          # Entry point; runs Optuna search or single run
-├── pipelines/      # ZenML pipeline wiring
-├── steps/          # Data, train, eval, export, deploy steps
-├── tiny_cnn.py     # Quantiseable tiny CNN for Fashion-MNIST
+.                     # This recipe
+├── run.py            # Entry point; runs Optuna search or single run
+├── pipelines/        # ZenML pipeline wiring
+├── steps/            # Data, train, eval, export, deploy steps
+├── tiny_cnn.py       # Quantiseable tiny CNN for Fashion-MNIST
 ├── platformio_esp32/ # PlatformIO project for ESP32-S3 deployment
-└── data/           # Fashion-MNIST cache (downloaded on first run)
+└── data/             # Fashion-MNIST cache (downloaded on first run)
 ```
 
 ## ✅ Prerequisites
@@ -32,98 +32,111 @@ This recipe gives you a concrete, reusable starting point for any project where 
 
 ## 🚀 Quick Start
 
-1) Install deps and activate the venv
+### 1. Install dependencies and activate the venv
 
 ```bash
-uv sync
+uv sync --extra tflite-export
 source .venv/bin/activate
 ```
 
-2) Start MLflow
+### 2. Start MLflow
 
 ```bash
-# The basic auth app requires a secret key for CSRF protection.
 export MLFLOW_FLASK_SERVER_SECRET_KEY="my-secret-key"
 mlflow server --app-name basic-auth --backend-store-uri sqlite:///mlflow.db --port 5000
 ```
 
-3) Point ZenML at MLflow
+### 3. Configure ZenML
 
 ```bash
-source .venv/bin/activate
-export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES # This is requried if you are on a Mac
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required on macOS
 zenml login --local
 ```
+
+Register the MLflow experiment tracker:
 
 ```bash
 zenml experiment-tracker register mlflow_experiment_tracker \
     --flavor=mlflow \
     --tracking_uri=http://localhost:5000 \
-    --tracking_username="admin" --tracking_password="password1234"
+    --tracking_username="admin" \
+    --tracking_password="password1234"
+```
 
-zenml stack register \
-    -e mlflow_experiment_tracker experiment-computer-vision \
+Create and activate the stack:
+
+```bash
+zenml stack register vision-on-the-edge \
+    -e mlflow_experiment_tracker \
     -a default \
     -o default \
     --set
 ```
 
-4) Run an experiment
+### 4. Run the pipeline
 
-```bash
-python run.py --optuna-trials 10
-```
-The above commands will carry out 10 optuna trails based on objective defined in [run.py](run.py#83)
-
-> Note: Optuna can also run a full grid search, which tries every possible combination of your parameters instead of sampling them randomly.
-
-## 📦 Export + Deploy (Optional)
-
-The pipeline exports a fully-quantized .pte model by default. Deployment to ESP32 via PlatformIO is optional and controlled by `--deploy`.
+Train the model and export to TFLite:
 
 ```bash
 python run.py \
-  --export-dir artifacts/edge \
-  --model-name fashion_mnist_tiny_cnn \
-  --deploy \
-  --platformio-project-dir vision_on_the_edge/platformio_esp32
+    --export-dir artifacts/edge \
+    --model-name fashion_mnist_tiny_cnn
 ```
 
-To skip export entirely:
+> Make sure the `tflite-export` dependency group is installed locally since the pipeline runs in the local orchestrator.
 
-```bash
-python run.py --no-export
-```
+## 🔁 Optuna Hyperparameter Search
 
-## 🔁 Optuna → Export → Deploy Flow
-
-1) **Optimise with Optuna**  
-Run Optuna to search hyperparameters; each trial runs the ZenML pipeline through evaluation only (no export/deploy).
+Run Optuna to search hyperparameters (export/deploy is skipped during search):
 
 ```bash
 python run.py --optuna-trials 10
 ```
 
-2) **Pick the best trial**  
-Use the Optuna output/MLflow to choose the best `bit_w`, `bit_a`, and other parameters.
-
-3) **Export and deploy the chosen configuration**  
-Run a single training with those parameters to export the .pte model and (optionally) deploy it to the ESP32.
+Pick the best trial from Optuna output or MLflow, then run a single training with those parameters:
 
 ```bash
 python run.py \
-  --bit-w 4 \
-  --bit-a 4 \
-  --export-dir artifacts/edge \
-  --model-name fashion_mnist_tiny_cnn \
-  --deploy \
-  --platformio-project-dir vision_on_the_edge/platformio_esp32
+    --bit-w 4 \
+    --bit-a 4 \
+    --export-dir artifacts/edge \
+    --model-name fashion_mnist_tiny_cnn
 ```
 
-When running Optuna (`--optuna-trials > 0`), export and deployment are skipped by design. Use the single-run path above for export/deployment of your chosen configuration.
+## 📦 ESP32 Deployment (Optional)
 
-### Configuring the ESP32 board and input source
+To deploy the TFLite model to an ESP32 via PlatformIO:
 
-- Board target: update the `board = ...` line in `vision_on_the_edge/platformio_esp32/platformio.ini`.
-- Device connection: plug the ESP32-S3 into your laptop via USB before running `--deploy`. If PlatformIO cannot auto-detect the port, set `upload_port` in `vision_on_the_edge/platformio_esp32/platformio.ini`.
-- Input source: `vision_on_the_edge/platformio_esp32/src/main.cpp` currently fills the input with a default value and runs one inference; replace that block with your real input capture (camera, sensor, serial, etc).
+```bash
+python run.py \
+    --bit-w 4 \
+    --bit-a 4 \
+    --export-dir artifacts/edge \
+    --model-name fashion_mnist_tiny_cnn \
+    --deploy \
+    --platformio-project-dir platformio_esp32
+```
+
+### Configuring the ESP32
+
+- **Board target:** Update the `board = ...` line in `platformio_esp32/platformio.ini`.
+- **Device connection:** Plug the ESP32-S3 into your laptop via USB before running `--deploy`. If PlatformIO cannot auto-detect the port, set `upload_port` in `platformio_esp32/platformio.ini`.
+- **Input source:** `platformio_esp32/src/main.cpp` currently fills the input with a default value and runs one inference; replace that block with your real input capture (camera, sensor, serial, etc).
+
+## 🛠️ CLI Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--num-epochs` | 3 | Number of training epochs |
+| `--batch-size` | 16 | Training batch size |
+| `--learning-rate` | 0.001 | Learning rate |
+| `--bit-w` | 8 | Weight quantisation bit width |
+| `--bit-a` | 8 | Activation quantisation bit width |
+| `--device` | cpu | Device to train on (auto/cpu/cuda) |
+| `--optuna-trials` | 0 | Number of Optuna trials (0 = skip search) |
+| `--export-dir` | artifacts/edge | Directory for TFLite artifacts |
+| `--model-name` | fashion_mnist_tiny_cnn | Base name for exported model |
+| `--no-export` | - | Skip TFLite export |
+| `--deploy` | - | Deploy to ESP32 via PlatformIO |
+| `--platformio-project-dir` | - | Path to PlatformIO project |
+| `--no-upload` | - | Build without uploading to device |

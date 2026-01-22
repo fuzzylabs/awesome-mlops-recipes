@@ -1,4 +1,4 @@
-"""Deploy an ExecuTorch model to ESP32 via PlatformIO."""
+"""Deploy a TFLite Micro model to ESP32 via PlatformIO."""
 
 from pathlib import Path
 import subprocess
@@ -38,14 +38,14 @@ def _write_c_array(data: bytes, array_name: str, out_cc: Path, out_h: Path) -> N
 
 @step(enable_cache=False)
 def deploy_platformio_step(
-    pte_model_path: str,
+    tflite_model_path: str,
     platformio_project_dir: str,
     upload: bool = True,
 ) -> str:
-    """Package a .pte model into a PlatformIO project and upload it.
+    """Package a TFLite model into a PlatformIO project and upload it.
 
     Args:
-        pte_model_path: Path to an ExecuTorch .pte file.
+        tflite_model_path: Path to a TFLite model file.
         platformio_project_dir: PlatformIO project directory with a src/ folder.
         upload: Whether to upload the firmware after building.
 
@@ -69,9 +69,9 @@ def deploy_platformio_step(
     if not src_dir.is_dir():
         raise ValueError(f"PlatformIO src directory not found: {src_dir}")
 
-    model_path = Path(pte_model_path)
+    model_path = Path(tflite_model_path)
     if not model_path.is_file():
-        raise ValueError(f"ExecuTorch model not found: {model_path}")
+        raise ValueError(f"TFLite model not found: {model_path}")
 
     model_data = model_path.read_bytes()
     model_cc_path = src_dir / "model_data.cc"
