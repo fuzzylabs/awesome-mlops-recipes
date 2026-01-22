@@ -11,7 +11,7 @@ This recipe gives you a concrete, reusable starting point for any project where 
 - **Quantisation aware training**: [Brevitas](https://xilinx.github.io/brevitas/v0.12.1/)
 - **Experiment tracking**: [MLflow](https://mlflow.org/)
 - **Pipeline orchestrator**: [ZenML](https://www.zenml.io/) with local orchestrator
-- **Model conversion**: ONNX, onnx2tf, TensorFlow Lite
+- **Model conversion**: ONNX → onnx2tf → TensorFlow SavedModel → TFLite (int8)
 - **Deployment**: [PlatformIO](https://platformio.org/)
 
 ## 🗄️ Project Structure
@@ -105,7 +105,9 @@ python run.py \
 
 ## 📦 ESP32 Deployment (Optional)
 
-> Note: PlatformIO require linux os, because the tensorflow/tflite-micro package in the PIO registry doesn’t have a build for darwin_arm64 (Apple Silicon), so the install fails during platformio run.
+> Note: PlatformIO requires Linux (or a Linux container/CI), because the tensorflow/tflite-micro
+> package in the PIO registry doesn’t have a build for darwin_arm64 (Apple Silicon), so installs
+> fail during `platformio run` on macOS.
 
 To deploy the TFLite model to an ESP32 via PlatformIO:
 
