@@ -1,0 +1,10 @@
+dataset:
+  name: Linq-AI-Research/FinDER
+  split: train
+  limit: 5
+  question_field_candidates:
+    - text
+  answer_field_candidates:
+    - answer
+  context_field_candidates:
+    - references

@@ -1,0 +1,264 @@
+.PHONY: deploy-mlflow create-new-prompt update-prompt setup-vllm setup-chroma setup-rag-api build-pipeline-image run-pipeline build-eval-data setup-ray build-rayserve-image setup-monitoring setup-locust run-feedback-agent approve-feedback-prompt portforward-vllm portforward-chroma portforward-rag-api portforward-mlflow portforward-rayserve portforward-grafana portforward-prometheus portforward-locust eval-rag eval-rag-part1 eval-rag-part2 teardown-vllm teardown-chroma teardown-rag-api teardown-ray teardown-monitoring teardown-locust logs-vllm logs-rag-api wait-mlflow wait-vllm wait-chroma wait-rag-api wait-locust status-mlflow status-vllm status-chroma status-rag-api status-locust help
+
+# Deploy MLflow
+deploy-mlflow:
+	@echo "Deploying MLflow..."
+	cd helm/mlflow && ./install.sh
+
+# Create new prompt (requires MLflow to be port-forwarded)
+create-new-prompt:
+	@echo "Creating new prompt..."
+	@echo "Make sure MLflow is port-forwarded (run 'make portforward-mlflow' in another terminal)"
+	@sleep 2
+	uv run prompt_versioning/new.py
+
+# Update prompt version (requires MLflow to be port-forwarded)
+update-prompt:
+	@echo "Updating prompt version..."
+	@echo "Make sure MLflow is port-forwarded (run 'make portforward-mlflow' in another terminal)"
+	@sleep 2
+	uv run prompt_versioning/update.py
+
+# Setup vLLM (build + push + deploy)
+setup-vllm:
+	@echo "Building and pushing vLLM image..."
+	cd llm && ./build-and-push.sh
+	@echo "Deploying vLLM to Kubernetes..."
+	cd k8s/vllm && ./deploy.sh
+
+# Setup Chroma
+setup-chroma:
+	@echo "Deploying Chroma to Kubernetes..."
+	cd k8s/chroma && ./deploy.sh
+
+# Fetch 10-K filings from SEC EDGAR
+fetch-10k-filings:
+	@echo "Fetching 10-K filings from SEC EDGAR..."
+	uv run python data_pipeline/fetch_10k.py --count 5
+
+# Build pipeline image for Metaflow
+build-pipeline-image:
+	@echo "Building and pushing Metaflow pipeline image..."
+	cd data_pipeline && ./build-and-push.sh
+
+# Run Metaflow pipeline (manual trigger)
+run-pipeline:
+	@echo "Running Metaflow pipeline..."
+	uv run python data_pipeline/flow.py run --with kubernetes
+
+# Build evaluation data
+build-eval-data:
+	@echo "Building RAGAS evaluation dataset..."
+	uv run python evals/ragas/build_eval_data.py
+
+# Setup RAG API (build + push + deploy)
+setup-rag-api:
+	@echo "Building and pushing RAG API image..."
+	cd src && ./build-and-push.sh
+	@echo "Deploying RAG API to Kubernetes..."
+	cd k8s/rag-api && ./deploy.sh
+
+# Ray Serve for vLLM
+build-rayserve-image:
+	@echo "Building and pushing Ray Serve image..."
+	cd ray_serve && ./build-and-push.sh
+
+setup-ray:
+	@echo "Deploying Ray Serve..."
+	cd k8s/ray-serve && ./deploy.sh
+
+# Monitoring
+setup-monitoring:
+	@echo "Installing Prometheus + Grafana..."
+	cd k8s/monitoring && ./install.sh
+
+# Locust
+setup-locust:
+	@echo "Deploying Locust..."
+	cd k8s/locust && ./deploy.sh
+
+# Feedback loop
+run-feedback-agent:
+	@echo "Running feedback loop agent..."
+	uv run python -m feedback_loop.agent
+
+approve-feedback-prompt:
+	@echo "Approving prompt in MLflow..."
+	uv run python -m feedback_loop.approve_prompt
+
+# Port forward services
+portforward-mlflow:
+	@echo "Port forwarding MLflow service to localhost:5000..."
+	kubectl port-forward svc/mlflow 5000:5000 -n mlflow
+
+portforward-vllm:
+	@echo "Port forwarding vLLM service to localhost:8000..."
+	kubectl port-forward svc/qwen3 8000:8000 -n vllm
+
+portforward-chroma:
+	@echo "Port forwarding Chroma service to localhost:8000..."
+	kubectl port-forward svc/chroma 8000:8000 -n chroma
+
+portforward-rag-api:
+	@echo "Port forwarding RAG API service to localhost:8080..."
+	kubectl port-forward svc/rag-api 8080:8080 -n rag-api
+
+portforward-rayserve:
+	@echo "Port forwarding Ray Serve to localhost:8000..."
+	kubectl port-forward svc/rayserve-vllm-serve-svc 8000:8000 -n rayserve
+
+portforward-grafana:
+	@echo "Port forwarding Grafana to localhost:3000..."
+	kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring
+
+portforward-prometheus:
+	@echo "Port forwarding Prometheus to localhost:9090..."
+	kubectl port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 -n monitoring
+
+portforward-locust:
+	@echo "Port forwarding Locust to localhost:8089..."
+	kubectl port-forward svc/locust 8089:8089 -n locust
+
+# Run evaluations
+eval-rag-part1:
+	@echo "Running Part 1 RAG evaluation suite..."
+	uv run python evals/ragas/build_eval_data.py
+	uv run python evals/ragas/run.py
+	uv run python -m evals.guardrails.hallucination
+	uv run python -m evals.guardrails.jailbreak
+
+eval-rag-part2: export RUN_FINANCIAL_ADVICE_GUARDRAIL=1
+eval-rag-part2: eval-rag-part1
+	@echo "Running Part 2 guardrails (financial advice)..."
+
+eval-rag: eval-rag-part2
+
+# Teardown resources
+teardown-vllm:
+	@echo "Tearing down vLLM resources..."
+	cd k8s/vllm && ./teardown.sh
+
+teardown-chroma:
+	@echo "Tearing down Chroma resources..."
+	cd k8s/chroma && ./teardown.sh
+
+teardown-rag-api:
+	@echo "Tearing down RAG API resources..."
+	cd k8s/rag-api && ./teardown.sh
+
+teardown-ray:
+	@echo "Tearing down Ray Serve..."
+	cd k8s/ray-serve && ./teardown.sh
+
+teardown-monitoring:
+	@echo "Tearing down monitoring stack..."
+	cd k8s/monitoring && ./teardown.sh
+
+teardown-locust:
+	@echo "Tearing down Locust..."
+	cd k8s/locust && ./teardown.sh
+
+# View logs
+logs-vllm:
+	@echo "Streaming vLLM logs..."
+	kubectl logs -f deployment/qwen3 -n vllm
+
+logs-rag-api:
+	@echo "Streaming RAG API logs..."
+	kubectl logs -f deployment/rag-api -n rag-api
+
+# Watch pod status
+wait-mlflow:
+	@echo "Watching MLflow pods..."
+	kubectl get pods -n mlflow -w
+
+wait-vllm:
+	@echo "Watching vLLM pods..."
+	kubectl get pods -n vllm -w
+
+wait-chroma:
+	@echo "Watching Chroma pods..."
+	kubectl get pods -n chroma -w
+
+wait-rag-api:
+	@echo "Watching RAG API pods..."
+	kubectl get pods -n rag-api -w
+
+wait-locust:
+	@echo "Watching Locust pods..."
+	kubectl get pods -n locust -w
+
+# Check pod status
+status-mlflow:
+	@echo "MLflow pod status:"
+	kubectl get pods -n mlflow
+
+status-vllm:
+	@echo "vLLM pod status:"
+	kubectl get pods -n vllm
+
+status-chroma:
+	@echo "Chroma pod status:"
+	kubectl get pods -n chroma
+
+status-rag-api:
+	@echo "RAG API pod status:"
+	kubectl get pods -n rag-api
+
+# Help
+help:
+	@echo "Available targets:"
+	@echo ""
+	@echo "Setup & Deployment:"
+	@echo "  deploy-mlflow          - Deploy MLflow"
+	@echo "  create-new-prompt      - Register new system prompt (requires port-forward)"
+	@echo "  update-prompt          - Update prompt version (requires port-forward)"
+	@echo "  fetch-10k-filings      - Fetch 10-K filings from SEC EDGAR"
+	@echo "  build-pipeline-image   - Build and push Metaflow pipeline image"
+	@echo "  run-pipeline           - Run Metaflow pipeline (manual trigger)"
+	@echo "  build-eval-data        - Build RAGAS evaluation dataset"
+	@echo "  setup-vllm             - Build and deploy vLLM server"
+	@echo "  setup-chroma           - Deploy Chroma server"
+	@echo "  setup-rag-api          - Build and deploy RAG API"
+	@echo "  build-rayserve-image   - Build and push Ray Serve image"
+	@echo "  setup-ray              - Deploy Ray Serve"
+	@echo "  setup-monitoring       - Install Prometheus + Grafana"
+	@echo "  setup-locust           - Deploy Locust"
+	@echo "  run-feedback-agent     - Run the feedback loop agent"
+	@echo "  approve-feedback-prompt - Approve a proposed prompt"
+	@echo ""
+	@echo "Port Forwarding:"
+	@echo "  portforward-mlflow     - Port forward MLflow (localhost:5000)"
+	@echo "  portforward-vllm       - Port forward vLLM (localhost:8000)"
+	@echo "  portforward-chroma     - Port forward Chroma (localhost:8000)"
+	@echo "  portforward-rag-api    - Port forward RAG API (localhost:8080)"
+	@echo "  portforward-rayserve   - Port forward Ray Serve (localhost:8000)"
+	@echo "  portforward-grafana    - Port forward Grafana (localhost:3000)"
+	@echo "  portforward-prometheus - Port forward Prometheus (localhost:9090)"
+	@echo "  portforward-locust     - Port forward Locust (localhost:8089)"
+	@echo ""
+	@echo "Evaluation:"
+	@echo "  eval-rag-part1         - Run Part 1 evals (RAGAS + hallucination/jailbreak)"
+	@echo "  eval-rag-part2         - Run Part 2 evals (Part 1 + financial advice)"
+	@echo "  eval-rag               - Run full eval suite (alias for Part 2)"
+	@echo ""
+	@echo ""
+	@echo "Monitoring:"
+	@echo "  logs-vllm              - Stream vLLM logs"
+	@echo "  logs-rag-api           - Stream RAG API logs"
+	@echo "  status-mlflow          - Check MLflow pod status"
+	@echo "  status-vllm            - Check vLLM pod status"
+	@echo "  status-chroma          - Check Chroma pod status"
+	@echo "  status-rag-api         - Check RAG API pod status"
+	@echo "  wait-mlflow            - Watch MLflow pods (blocking)"
+	@echo "  wait-vllm              - Watch vLLM pods (blocking)"
+	@echo "  wait-chroma            - Watch Chroma pods (blocking)"
+	@echo "  wait-rag-api           - Watch RAG API pods (blocking)"
+	@echo ""
+	@echo "Teardown:"
+	@echo "  teardown-vllm          - Remove vLLM deployment"
+	@echo "  teardown-chroma        - Remove Chroma deployment"
+	@echo "  teardown-rag-api       - Remove RAG API deployment"
+	@echo "  teardown-ray           - Remove Ray Serve deployment"
+	@echo "  teardown-monitoring    - Remove Prometheus + Grafana"
+	@echo "  teardown-locust        - Remove Locust"

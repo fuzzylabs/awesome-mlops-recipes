@@ -1,0 +1,57 @@
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: rayserve-vllm
+  namespace: rayserve
+spec:
+  serviceUnhealthySecondThreshold: 600
+  deploymentUnhealthySecondThreshold: 600
+  serveConfigV2: |
+    applications:
+      - name: vllm-proxy
+        import_path: serve_app:app
+        route_prefix: /
+        runtime_env:
+          env_vars:
+            VLLM_BASE_URL: http://qwen3.vllm.svc.cluster.local:8000
+  rayClusterConfig:
+    rayVersion: "2.41.0"
+    headGroupSpec:
+      serviceType: ClusterIP
+      rayStartParams:
+        dashboard-host: "0.0.0.0"
+      template:
+        spec:
+          containers:
+            - name: ray-head
+              image: REPLACE_WITH_RAG_RAYSERVE_ECR_URL:latest
+              ports:
+                - containerPort: 8265
+                  name: dashboard
+                - containerPort: 8000
+                  name: serve
+              resources:
+                requests:
+                  cpu: "1"
+                  memory: "2Gi"
+                limits:
+                  cpu: "2"
+                  memory: "4Gi"
+    workerGroupSpecs:
+      - groupName: default
+        replicas: 1
+        minReplicas: 0
+        maxReplicas: 3
+        rayStartParams: {}
+        template:
+          spec:
+            containers:
+              - name: ray-worker
+                image: REPLACE_WITH_RAG_RAYSERVE_ECR_URL:latest
+                resources:
+                  requests:
+                    cpu: "1"
+                    memory: "2Gi"
+                  limits:
+                    cpu: "2"
+                    memory: "4Gi"

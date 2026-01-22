@@ -1,0 +1,12 @@
+grafana:
+  adminPassword: "REPLACE_WITH_GRAFANA_ADMIN_PASSWORD"
+  sidecar:
+    dashboards:
+      enabled: true
+  service:
+    type: ClusterIP
+
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelector: {}
+    serviceMonitorSelectorNilUsesHelmValues: false

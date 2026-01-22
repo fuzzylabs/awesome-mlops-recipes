@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locust
+  namespace: locust
+  labels:
+    app: locust
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locust
+  template:
+    metadata:
+      labels:
+        app: locust
+    spec:
+      containers:
+        - name: locust
+          image: locustio/locust:2.29.1
+          args:
+            - "-f"
+            - "/home/locust/locustfile.py"
+          env:
+            - name: LOCUST_HOST
+              value: "http://rag-api.rag-api.svc.cluster.local:8080"
+          ports:
+            - containerPort: 8089
+              name: web
+          volumeMounts:
+            - name: locustfile
+              mountPath: /home/locust/locustfile.py
+              subPath: locustfile.py
+      volumes:
+        - name: locustfile
+          configMap:
+            name: locustfile
