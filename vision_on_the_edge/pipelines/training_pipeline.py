@@ -6,7 +6,7 @@ from zenml import pipeline
 
 from steps.data_loader import load_data_step
 from steps.evaluate import evaluate_step
-from steps.export_tflite import export_tflite_step
+from steps.export_pte import export_pte_step
 from steps.training import train_step
 from steps.deploy_platformio import deploy_platformio_step
 import torch
@@ -72,9 +72,9 @@ def training_pipeline(
         bit_a=bit_a,
     )
 
-    exported_tflite_path = None
+    exported_model_path = None
     if export_tflite:
-        exported_tflite_path = export_tflite_step(
+        exported_model_path = export_pte_step(
             state_dict=state_dict,
             bit_w=bit_w,
             bit_a=bit_a,
@@ -85,10 +85,10 @@ def training_pipeline(
     if deploy:
         if not platformio_project_dir:
             raise ValueError("Deployment requires platformio_project_dir.")
-        if not exported_tflite_path:
+        if not exported_model_path:
             raise ValueError("Deployment requires export_tflite=True.")
         deploy_platformio_step(
-            tflite_model_path=exported_tflite_path,
+            pte_model_path=exported_model_path,
             platformio_project_dir=platformio_project_dir,
             upload=upload,
         )

@@ -1,9 +1,7 @@
-"""Deploy a TFLite Micro model to ESP32 via PlatformIO."""
+"""Deploy an ExecuTorch model to ESP32 via PlatformIO."""
 
-from __future__ import annotations
-
-import subprocess
 from pathlib import Path
+import subprocess
 
 from zenml import step
 
@@ -40,14 +38,14 @@ def _write_c_array(data: bytes, array_name: str, out_cc: Path, out_h: Path) -> N
 
 @step(enable_cache=False)
 def deploy_platformio_step(
-    tflite_model_path: str,
+    pte_model_path: str,
     platformio_project_dir: str,
     upload: bool = True,
 ) -> str:
-    """Package a TFLite model into a PlatformIO project and upload it.
+    """Package a .pte model into a PlatformIO project and upload it.
 
     Args:
-        tflite_model_path: Path to a TFLite model file.
+        pte_model_path: Path to an ExecuTorch .pte file.
         platformio_project_dir: PlatformIO project directory with a src/ folder.
         upload: Whether to upload the firmware after building.
 
@@ -55,13 +53,25 @@ def deploy_platformio_step(
         Status message.
     """
     project_dir = Path(platformio_project_dir)
+    candidates = [project_dir]
+    if not project_dir.is_absolute():
+        base_dir = Path(__file__).resolve().parents[1]
+        repo_root = base_dir.parent
+        candidates.extend([base_dir / project_dir, repo_root / project_dir])
+        if project_dir.parts and project_dir.parts[0] == base_dir.name:
+            candidates.append(base_dir / Path(*project_dir.parts[1:]))
+    for candidate in candidates:
+        if candidate.is_dir():
+            project_dir = candidate
+            break
+
     src_dir = project_dir / "src"
     if not src_dir.is_dir():
         raise ValueError(f"PlatformIO src directory not found: {src_dir}")
 
-    model_path = Path(tflite_model_path)
+    model_path = Path(pte_model_path)
     if not model_path.is_file():
-        raise ValueError(f"TFLite model not found: {model_path}")
+        raise ValueError(f"ExecuTorch model not found: {model_path}")
 
     model_data = model_path.read_bytes()
     model_cc_path = src_dir / "model_data.cc"

@@ -79,7 +79,7 @@ The above commands will carry out 10 optuna trails based on objective defined in
 
 ## 📦 Export + Deploy (Optional)
 
-The pipeline exports a fully-quantized TFLite model by default. Deployment to ESP32 via PlatformIO is optional and controlled by `--deploy`.
+The pipeline exports a fully-quantized .pte model by default. Deployment to ESP32 via PlatformIO is optional and controlled by `--deploy`.
 
 ```bash
 python run.py \
@@ -108,7 +108,7 @@ python run.py --optuna-trials 10
 Use the Optuna output/MLflow to choose the best `bit_w`, `bit_a`, and other parameters.
 
 3) **Export and deploy the chosen configuration**  
-Run a single training with those parameters to export the TFLite model and (optionally) deploy it to the ESP32.
+Run a single training with those parameters to export the .pte model and (optionally) deploy it to the ESP32.
 
 ```bash
 python run.py \
@@ -125,4 +125,5 @@ When running Optuna (`--optuna-trials > 0`), export and deployment are skipped b
 ### Configuring the ESP32 board and input source
 
 - Board target: update the `board = ...` line in `vision_on_the_edge/platformio_esp32/platformio.ini`.
+- Device connection: plug the ESP32-S3 into your laptop via USB before running `--deploy`. If PlatformIO cannot auto-detect the port, set `upload_port` in `vision_on_the_edge/platformio_esp32/platformio.ini`.
 - Input source: `vision_on_the_edge/platformio_esp32/src/main.cpp` currently fills the input with a default value and runs one inference; replace that block with your real input capture (camera, sensor, serial, etc).
