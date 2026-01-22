@@ -1,10 +1,15 @@
 """Training pipeline."""
 
+from typing import Optional
+
 from zenml import pipeline
 
 from steps.data_loader import load_data_step
 from steps.evaluate import evaluate_step
+from steps.export_tflite import export_saved_model_step
+from steps.convert_int8_tflite import convert_int8_tflite_step
 from steps.training import train_step
+from steps.deploy_platformio import deploy_platformio_step
 import torch
 from zenml.logger import get_logger
 
@@ -19,6 +24,12 @@ def training_pipeline(
     num_epochs: int = 10,
     batch_size: int = 64,
     learning_rate: float = 0.001,
+    export_tflite: bool = True,
+    export_dir: str = "artifacts/edge",
+    model_name: str = "fashion_mnist_tiny_cnn",
+    deploy: bool = False,
+    platformio_project_dir: Optional[str] = None,
+    upload: bool = True,
 ):
     """Run the training workflow end-to-end.
 
@@ -61,5 +72,31 @@ def training_pipeline(
         bit_w=bit_w,
         bit_a=bit_a,
     )
+
+    exported_model_path = None
+    if export_tflite:
+        saved_model_dir = export_saved_model_step(
+            state_dict=state_dict,
+            bit_w=bit_w,
+            bit_a=bit_a,
+            export_dir=export_dir,
+            model_name=model_name,
+        )
+        exported_model_path = convert_int8_tflite_step(
+            saved_model_dir=saved_model_dir,
+            export_dir=export_dir,
+            model_name=model_name,
+        )
+
+    if deploy:
+        if not platformio_project_dir:
+            raise ValueError("Deployment requires platformio_project_dir.")
+        if not exported_model_path:
+            raise ValueError("Deployment requires export_tflite=True.")
+        deploy_platformio_step(
+            tflite_model_path=exported_model_path,
+            platformio_project_dir=platformio_project_dir,
+            upload=upload,
+        )
 
     return metrics

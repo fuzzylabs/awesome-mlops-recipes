@@ -6,7 +6,7 @@ from zenml import step
 from zenml.logger import get_logger
 import torch
 from torch.utils.data import DataLoader
-from mobilenetv2 import QuantMobileNetV2
+from tiny_cnn import QuantTinyCNN
 
 
 logger = get_logger(__name__)
@@ -33,7 +33,7 @@ def evaluate_step(
         Dictionary containing evaluation metrics.
     """
     # Rebuild and setup device
-    model = QuantMobileNetV2(num_classes=10, bit_w=bit_w, bit_a=bit_a)
+    model = QuantTinyCNN(num_classes=10, bit_w=bit_w, bit_a=bit_a)
     model.load_state_dict(state_dict)
     model.to(device)
     model.eval()

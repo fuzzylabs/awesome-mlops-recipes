@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 def load_data_step(
     batch_size: int,
 ) -> tuple[DataLoader, DataLoader]:
-    """Load MNIST data and return train/test data loaders.
+    """Load Fashion-MNIST data and return train/test data loaders.
 
     Args:
         batch_size: Batch size to use for the data loaders.
@@ -20,17 +20,18 @@ def load_data_step(
     Returns:
         A tuple of train and test data loaders.
     """
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.Grayscale(num_output_channels=3),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
-        ),
-    ])
-    train_dataset = datasets.MNIST(root='data', train=True, download=True, transform=transform)
-    test_dataset = datasets.MNIST(root='data', train=False, download=True, transform=transform)
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.2860], std=[0.3530]),
+        ]
+    )
+    train_dataset = datasets.FashionMNIST(
+        root="data", train=True, download=True, transform=transform
+    )
+    test_dataset = datasets.FashionMNIST(
+        root="data", train=False, download=True, transform=transform
+    )
 
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)

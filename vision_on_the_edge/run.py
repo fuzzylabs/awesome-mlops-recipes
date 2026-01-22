@@ -11,12 +11,6 @@ from pipelines.training_pipeline import training_pipeline
 from zenml.client import Client
 import os
 
-# load the experiment tracker configured in your active stack
-tracker = Client().active_stack.experiment_tracker
-
-os.environ["MLFLOW_TRACKING_USERNAME"] = tracker.config.tracking_username
-os.environ["MLFLOW_TRACKING_PASSWORD"] = tracker.config.tracking_password
-
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,7 +20,7 @@ def parse_args() -> argparse.Namespace:
         Parsed CLI arguments.
     """
     parser = argparse.ArgumentParser(description="Run the ZenML training pipeline.")
-    parser.add_argument("--num-epochs", type=int, default=3, help="Number of training epochs.")
+    parser.add_argument("--num-epochs", type=int, default=5, help="Number of training epochs.")
     parser.add_argument("--batch-size", type=int, default=16, help="Training batch size.")
     parser.add_argument("--learning-rate", type=float, default=0.001, help="Learning rate.")
     parser.add_argument("--bit-w", type=int, default=8, help="Quantisation bit width for weights.")
@@ -50,10 +44,45 @@ def parse_args() -> argparse.Namespace:
         default=0.2,
         help="Penalty weight per MB of model size when computing the Optuna score.",
     )
+    parser.add_argument(
+        "--export-dir",
+        type=str,
+        default="artifacts/edge",
+        help="Directory to write exported TFLite artifacts.",
+    )
+    parser.add_argument(
+        "--model-name",
+        type=str,
+        default="fashion_mnist_tiny_cnn",
+        help="Base name for exported model artifacts.",
+    )
+    parser.add_argument(
+        "--no-export",
+        action="store_true",
+        help="Skip exporting the model to TFLite.",
+    )
+    parser.add_argument(
+        "--deploy",
+        action="store_true",
+        help="Deploy a TFLite Micro model via PlatformIO after evaluation.",
+    )
+    parser.add_argument(
+        "--platformio-project-dir",
+        type=str,
+        default=None,
+        help="Path to the PlatformIO project used for ESP32 deployment.",
+    )
+    parser.add_argument(
+        "--no-upload",
+        action="store_true",
+        help="Build the PlatformIO project without uploading to the device.",
+    )
     return parser.parse_args()
 
 
-def run_single_training(args: argparse.Namespace, bit_w: int, bit_a: int) -> Dict[str, Any]:
+def run_single_training(
+    args: argparse.Namespace, bit_w: int, bit_a: int, export_tflite: bool, deploy: bool
+) -> Dict[str, Any]:
     """Run the pipeline once and return metrics.
 
     Args:
@@ -74,6 +103,12 @@ def run_single_training(args: argparse.Namespace, bit_w: int, bit_a: int) -> Dic
         bit_w=bit_w,
         bit_a=bit_a,
         device=args.device,
+        export_tflite=export_tflite,
+        export_dir=args.export_dir,
+        model_name=args.model_name,
+        deploy=deploy,
+        platformio_project_dir=args.platformio_project_dir,
+        upload=not args.no_upload,
     )
 
     # ZenML can return a PipelineRunView instead of direct outputs; try to read the evaluation artifact.
@@ -110,7 +145,13 @@ def objective(trial: optuna.Trial, args: argparse.Namespace) -> float:
     bit_a = trial.suggest_categorical("bit_a", [2, 4, 6, 8])
 
     with mlflow.start_run(run_name=f"optuna-trial-{trial.number}", nested=True):
-        metrics = run_single_training(args=args, bit_w=bit_w, bit_a=bit_a)
+        metrics = run_single_training(
+            args=args,
+            bit_w=bit_w,
+            bit_a=bit_a,
+            export_tflite=False,
+            deploy=False,
+        )
         accuracy = float(metrics.get("overall_accuracy", 0.0))
         latency = float(metrics.get("latency_ms", 0.0))
         size_mb = float(metrics.get("model_size_mb", 0.0))
@@ -149,18 +190,44 @@ def main() -> None:
     """
     args = parse_args()
 
-    mlflow.set_tracking_uri(tracker.config.tracking_uri)
+    tracker = Client().active_stack.experiment_tracker
+    if tracker is None:
+        raise RuntimeError(
+            "No experiment tracker configured in the active ZenML stack. "
+            "Follow the README MLflow setup steps to register and activate the stack."
+        )
+
+    if tracker.config.tracking_username:
+        os.environ["MLFLOW_TRACKING_USERNAME"] = tracker.config.tracking_username
+    if tracker.config.tracking_password:
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = tracker.config.tracking_password
+
+    # The ZenML tracker is configured with host.docker.internal for Docker containers,
+    # but run.py executes on the host, so translate to localhost
+    tracking_uri = tracker.config.tracking_uri
+    if tracking_uri:
+        tracking_uri = tracking_uri.replace("host.docker.internal", "localhost")
+    mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment("vision-on-the-edge")
 
     if args.optuna_trials > 0:
         study = optuna.create_study(direction="maximize")
-        study.optimize(partial(objective, args=args), n_trials=args.optuna_trials)
+        study.optimize(
+            partial(objective, args=args),
+            n_trials=args.optuna_trials,
+        )
 
         print(f"Best trial score: {study.best_trial.value:.2f}")
         print(f"Best params: {study.best_trial.params}")
     else:
         with mlflow.start_run(run_name="single-run"):
-            metrics = run_single_training(args=args, bit_w=args.bit_w, bit_a=args.bit_a)
+            metrics = run_single_training(
+                args=args,
+                bit_w=args.bit_w,
+                bit_a=args.bit_a,
+                export_tflite=not args.no_export,
+                deploy=args.deploy,
+            )
             accuracy = float(metrics.get("overall_accuracy", 0.0))
             latency = float(metrics.get("latency_ms", 0.0))
             size_mb = float(metrics.get("model_size_mb", 0.0))

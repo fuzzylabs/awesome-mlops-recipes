@@ -233,3 +233,9 @@ mlartifacts/
 
 # MacOS
 *.DS_Store
+
+# PlatformIO
+.pio/
+
+# Artifacts
+artifacts/
