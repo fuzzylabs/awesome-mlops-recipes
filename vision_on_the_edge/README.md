@@ -105,6 +105,8 @@ python run.py \
 
 ## 📦 ESP32 Deployment (Optional)
 
+> Note: PlatformIO require linux os, because the tensorflow/tflite-micro package in the PIO registry doesn’t have a build for darwin_arm64 (Apple Silicon), so the install fails during platformio run.
+
 To deploy the TFLite model to an ESP32 via PlatformIO:
 
 ```bash
@@ -122,6 +124,21 @@ python run.py \
 - **Board target:** Update the `board = ...` line in `platformio_esp32/platformio.ini`.
 - **Device connection:** Plug the ESP32-S3 into your laptop via USB before running `--deploy`. If PlatformIO cannot auto-detect the port, set `upload_port` in `platformio_esp32/platformio.ini`.
 - **Input source:** `platformio_esp32/src/main.cpp` currently fills the input with a default value and runs one inference; replace that block with your real input capture (camera, sensor, serial, etc).
+
+## 🧩 Why ONNX conversion needs constant folding
+
+When exporting from Brevitas (QAT), Conv weights are often represented as a small ONNX subgraph
+(fake-quant ops like `Mul`, `Where`, `Clip`, etc.) instead of a single constant tensor.
+`onnx2tf` only transposes Conv weights when they are constants. If weights stay as a computed
+tensor, TensorFlow receives them in ONNX layout (`[out, in, kH, kW]`) and fails with a shape
+mismatch (e.g. “input depth 32 is not a multiple of filter depth 3”).
+
+To fix this, the export step runs a light **constant-folding** pass that evaluates any
+fully-constant subgraphs and replaces them with a single initialiser. That makes the Conv
+weights look like constants again so `onnx2tf` can transpose them correctly.
+
+This issue is specific to quantisation/fake-quant flows (like Brevitas). A plain PyTorch model
+usually exports Conv weights as constants and does not require this extra folding step.
 
 ## 🛠️ CLI Options
 
