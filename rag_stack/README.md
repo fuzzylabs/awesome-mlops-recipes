@@ -185,12 +185,13 @@ make portforward-chroma
 
 **Run the pipeline locally:**
 ```bash
+uv sync --group pipeline
 uv run python data_pipeline/flow.py run
 ```
 
 ### 6. Deploy the RAG API
 
-Update the image in `k8s/rag-api/deployment.yaml` to match your ECR repository before deploying.
+Update the image in `k8s/rag-api/deployment.yaml` to match your ECR repository before deploying. Image building takes around 20-30 minutes.
 
 ```bash
 make setup-rag-api
@@ -200,6 +201,9 @@ make wait-rag-api
 Port-forward and test:
 ```bash
 make portforward-rag-api
+```
+
+```bash
 curl -X POST http://localhost:8080/query \
   -H "Content-Type: application/json" \
   -d '{"question":"What is the revenue of Company X in 2023?"}'
