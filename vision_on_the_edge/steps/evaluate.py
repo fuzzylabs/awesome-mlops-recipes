@@ -2,17 +2,16 @@
 
 import time
 
+import torch
+from tiny_cnn import QuantTinyCNN
+from torch.utils.data import DataLoader
 from zenml import step
 from zenml.logger import get_logger
-import torch
-from torch.utils.data import DataLoader
-from tiny_cnn import QuantTinyCNN
-
 
 logger = get_logger(__name__)
 
 
-@step(enable_cache=False)
+@step(enable_cache=False)  # type: ignore[untyped-decorator]
 def evaluate_step(
     state_dict: dict[str, torch.Tensor],
     test_dataloader: DataLoader,
@@ -26,8 +25,8 @@ def evaluate_step(
         state_dict: The trained model weights.
         test_dataloader: DataLoader for test data.
         device: Device to evaluate on ('auto', 'cpu', 'cuda').
-        bit_w: Weight quantization bits used for reconstruction.
-        bit_a: Activation quantization bits used for reconstruction.
+        bit_w: Weight quantisation bits used for reconstruction.
+        bit_a: Activation quantisation bits used for reconstruction.
 
     Returns:
         Dictionary containing evaluation metrics.
@@ -46,7 +45,7 @@ def evaluate_step(
     latency_batches_to_measure = 5
 
     logger.info("Starting model evaluation...")
-    logger.info(f"Test samples: {len(test_dataloader.dataset)}")  # type: ignore
+    logger.info(f"Test samples: {len(test_dataloader.dataset)}")
 
     with torch.no_grad():
         for raw_inputs, raw_labels in test_dataloader:

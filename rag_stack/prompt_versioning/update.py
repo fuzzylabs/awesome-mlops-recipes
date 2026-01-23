@@ -3,8 +3,16 @@
 import mlflow
 
 
-def update_prompt(prompt_name: str, new_template: str):
-    """Update the prompt in MLflow prompt registry."""
+def update_prompt(prompt_name: str, new_template: str) -> None:
+    """Update the prompt in MLflow prompt registry.
+
+    Args:
+        prompt_name: Name of the prompt to update.
+        new_template: New prompt template text.
+
+    Returns:
+        None.
+    """
     mlflow.set_tracking_uri("http://localhost:5000")
 
     updated_prompt = mlflow.genai.register_prompt(

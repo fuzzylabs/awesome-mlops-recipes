@@ -14,4 +14,3 @@ spec:
       name: http
   selector:
     app: pr-review-agent
-

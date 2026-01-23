@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-
-"""
-Utility script to replay the state of an MLflow run in the local Git workspace.
+"""Utility script to replay the state of an MLflow run in the local Git workspace.
 
 Given an MLflow run name, the script will:
 1. Locate the run (optionally within a specific experiment).
@@ -21,18 +19,39 @@ Examples:
 import argparse
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 import mlflow
 from mlflow.entities import ViewType
 from mlflow.tracking import MlflowClient
-
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+GIT_BIN = shutil.which("git")
+DVC_BIN = shutil.which("dvc")
+
+
+def _require_executable(name: str, resolved_path: str | None) -> str:
+    """Ensure a named executable is available on PATH.
+
+    Args:
+        name: Executable name to resolve.
+        resolved_path: Resolved absolute path from shutil.which.
+
+    Returns:
+        Absolute path to the executable.
+    """
+    if not resolved_path:
+        raise SystemExit(f"Error: '{name}' is not installed or not on PATH.")
+    return resolved_path
+
+
+def _git_bin() -> str:
+    """Return the resolved git executable path."""
+    return _require_executable("git", GIT_BIN)
 
 
 def parse_args() -> argparse.Namespace:
@@ -68,8 +87,8 @@ def generate_reproduce_run_command(run_id: str, experiment_id: str) -> str:
     """Return the CLI command that replays the state of an MLflow run.
 
     Args:
-        run_id (str): Identifier of the MLflow run.
-        experiment_id (str): Identifier of the experiment that owns the run.
+        run_id: Identifier of the MLflow run.
+        experiment_id: Identifier of the experiment that owns the run.
 
     Returns:
         str: Shell command that reproduces the run's Git state.
@@ -81,14 +100,15 @@ def ensure_git_repo(repo_path: Path) -> None:
     """Verify that `repo_path` points to a Git repository.
 
     Args:
-        repo_path (Path): Path expected to be a Git working tree.
+        repo_path: Path expected to be a Git working tree.
 
     Raises:
         SystemExit: If the path is not a Git repository.
     """
     try:
-        subprocess.run(
-            ["git", "-C", str(repo_path), "rev-parse", "--is-inside-work-tree"],
+        git_bin = _git_bin()
+        subprocess.run(  # nosec B603
+            [git_bin, "-C", str(repo_path), "rev-parse", "--is-inside-work-tree"],
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -101,13 +121,14 @@ def ensure_clean_worktree(repo_path: Path) -> None:
     """Guard that the Git working tree has no uncommitted changes.
 
     Args:
-        repo_path (Path): Path to the Git repository.
+        repo_path: Path to the Git repository.
 
     Raises:
         SystemExit: If the working tree is dirty.
     """
-    status = subprocess.run(
-        ["git", "-C", str(repo_path), "status", "--porcelain"],
+    git_bin = _git_bin()
+    status = subprocess.run(  # nosec B603
+        [git_bin, "-C", str(repo_path), "status", "--porcelain"],
         check=True,
         capture_output=True,
         text=True,
@@ -121,14 +142,14 @@ def ensure_clean_worktree(repo_path: Path) -> None:
 def find_run(
     client: MlflowClient,
     run_id: str,
-    experiment_id: Optional[str],
+    experiment_id: str | None,
 ) -> mlflow.entities.Run:
     """Locate the MLflow run matching `run_id`.
 
     Args:
-        client (MlflowClient): MLflow client used to query runs.
-        run_id (str): Identifier of the run to locate.
-        experiment_id (str | None): Restrict the search to a specific experiment.
+        client: MLflow client used to query runs.
+        run_id: Identifier of the run to locate.
+        experiment_id: Restrict the search to a specific experiment.
 
     Returns:
         mlflow.entities.Run: The matching MLflow run.
@@ -161,7 +182,7 @@ def fetch_commit_hash(run: mlflow.entities.Run) -> str:
     """Extract the Git commit hash from a tracked MLflow run.
 
     Args:
-        run (mlflow.entities.Run): Run with Git metadata tags.
+        run: Run with Git metadata tags.
 
     Returns:
         str: Git commit hash associated with the run.
@@ -176,7 +197,7 @@ def fetch_commit_hash(run: mlflow.entities.Run) -> str:
     )
     if not commit:
         raise SystemExit("Error: Run does not contain a Git commit hash in its tags or params.")
-    return commit
+    return str(commit)
 
 
 def download_diff_artifact(
@@ -187,9 +208,9 @@ def download_diff_artifact(
     """Download the diff artifact for a run and return a local copy if present.
 
     Args:
-        client (MlflowClient): MLflow client used for artifact downloads.
-        run_id (str): Run identifier that owns the artifact.
-        diff_pattern (str): Glob pattern used to locate the diff file.
+        client: MLflow client used for artifact downloads.
+        run_id: Run identifier that owns the artifact.
+        diff_pattern: Glob pattern used to locate the diff file.
 
     Returns:
         Path | None: Local path to the diff file, or None if not available.
@@ -224,15 +245,23 @@ def verify_commit_exists(repo_path: Path, commit_hash: str) -> None:
     """Ensure the Git commit hash exists in the local repository.
 
     Args:
-        repo_path (Path): Path to the Git repository.
-        commit_hash (str): Commit hash to validate.
+        repo_path: Path to the Git repository.
+        commit_hash: Commit hash to validate.
 
     Raises:
         SystemExit: If the commit is absent locally.
     """
     try:
-        subprocess.run(
-            ["git", "-C", str(repo_path), "cat-file", "-e", f"{commit_hash}^{{commit}}"],
+        git_bin = _git_bin()
+        subprocess.run(  # nosec B603
+            [
+                git_bin,
+                "-C",
+                str(repo_path),
+                "cat-file",
+                "-e",
+                f"{commit_hash}^{{commit}}",
+            ],
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -247,12 +276,13 @@ def restore_to_commit(repo_path: Path, commit_hash: str) -> None:
     """Restore the working tree to the specified commit without checkout.
 
     Args:
-        repo_path (Path): Path to the Git repository.
-        commit_hash (str): Commit hash to restore.
+        repo_path: Path to the Git repository.
+        commit_hash: Commit hash to restore.
     """
-    subprocess.run(
+    git_bin = _git_bin()
+    subprocess.run(  # nosec B603
         [
-            "git",
+            git_bin,
             "-C",
             str(repo_path),
             "restore",
@@ -269,14 +299,12 @@ def apply_diff(repo_path: Path, diff_path: Path) -> None:
     """Apply the diff artifact onto the current working tree.
 
     Args:
-        repo_path (Path): Path to the Git repository.
-        diff_path (Path): Path to the diff file.
-
-    Returns:
-        None: This function does not return a value.
+        repo_path: Path to the Git repository.
+        diff_path: Path to the diff file.
     """
-    subprocess.run(
-        ["git", "-C", str(repo_path), "apply", "--whitespace=nowarn", str(diff_path)],
+    git_bin = _git_bin()
+    subprocess.run(  # nosec B603
+        [git_bin, "-C", str(repo_path), "apply", "--whitespace=nowarn", str(diff_path)],
         check=True,
     )
 
@@ -284,8 +312,11 @@ def apply_diff(repo_path: Path, diff_path: Path) -> None:
 def run_dvc_pull(repo_path: Path) -> None:
     """Run `dvc pull` from the repository path, warning on failure."""
     try:
-        subprocess.run(
-            ["dvc", "pull"],
+        if not DVC_BIN:
+            logger.warning("DVC is not installed or not on PATH; skipped dvc pull.")
+            return
+        subprocess.run(  # nosec B603
+            [DVC_BIN, "pull"],
             check=True,
             cwd=repo_path,
         )

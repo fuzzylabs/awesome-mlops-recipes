@@ -5,10 +5,9 @@ metadata:
 provisioner: ebs.csi.aws.com
 parameters:
   type: gp3
-  # Optional: Set IOPS and throughput (gp3 allows customization)
+  # Optional: Set IOPS and throughput (gp3 allows customisation)
   iops: "3000"        # Default is 3000, can go up to 16000
   throughput: "125"   # MB/s, default is 125, can go up to 1000
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
 reclaimPolicy: Delete
-

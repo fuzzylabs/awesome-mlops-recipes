@@ -3,27 +3,29 @@
 import mlflow
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from mlflow.models.signature import infer_signature
-from torch.utils.data import DataLoader, TensorDataset, random_split
-from zenml import step
-from zenml.client import Client
-from zenml.logger import get_logger
-
 from model import CNN
+from torch import nn, optim
+from torch.utils.data import DataLoader, TensorDataset, random_split
 from tracking import (
     generate_reproduce_run_command,
     get_logbook,
     log_git_info,
     log_model_architecture,
 )
+from zenml import step
+from zenml.client import Client
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 def _experiment_tracker_name() -> str | None:
-    """Return the active experiment tracker name if configured."""
+    """Return the active experiment tracker name if configured.
+
+    Returns:
+        str | None: Experiment tracker name if available.
+    """
     try:
         tracker = Client().active_stack.experiment_tracker
         return tracker.name if tracker else None
@@ -32,10 +34,10 @@ def _experiment_tracker_name() -> str | None:
 
 
 @step(
-    enable_cache=False, 
+    enable_cache=False,
     experiment_tracker=_experiment_tracker_name(),
-)
-def train_step(
+)  # type: ignore[untyped-decorator]
+def train_step(  # noqa: PLR0913, PLR0915
     train_features: np.ndarray,
     train_labels: np.ndarray,
     num_epochs: int = 10,
@@ -43,14 +45,26 @@ def train_step(
     learning_rate: float = 0.001,
     seed: int = 42,
 ) -> tuple[torch.nn.Module, dict[str, float]]:
-    """Train the CNN and log artefacts to MLflow."""
+    """Train the CNN and log artefacts to MLflow.
+
+    Args:
+        train_features: Training feature array.
+        train_labels: Training labels array.
+        num_epochs: Number of training epochs.
+        batch_size: Batch size for training.
+        learning_rate: Learning rate for the optimizer.
+        seed: Random seed for reproducibility.
+
+    Returns:
+        tuple[torch.nn.Module, dict[str, float]]: Trained model and training metrics.
+    """
     torch.manual_seed(seed)
     mlflow.pytorch.autolog(checkpoint=True)
 
-    X_tensor = torch.from_numpy(train_features)
+    x_tensor = torch.from_numpy(train_features)
     y_tensor = torch.from_numpy(train_labels).long()
 
-    dataset = TensorDataset(X_tensor, y_tensor)
+    dataset = TensorDataset(x_tensor, y_tensor)
     val_size = max(1, int(0.1 * len(dataset)))
     train_size = len(dataset) - val_size
     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
@@ -59,7 +73,7 @@ def train_step(
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
     num_classes = int(torch.unique(y_tensor).numel())
-    input_channels = X_tensor.shape[1] if X_tensor.dim() > 1 else 1
+    input_channels = x_tensor.shape[1] if x_tensor.dim() > 1 else 1
     model = CNN(input_channels=input_channels, output_size=num_classes)
 
     criterion = nn.CrossEntropyLoss()
@@ -75,9 +89,7 @@ def train_step(
     if active_run:
         mlflow.log_param(
             "reproduce_command",
-            generate_reproduce_run_command(
-                active_run.info.run_id, active_run.info.experiment_id
-            ),
+            generate_reproduce_run_command(active_run.info.run_id, active_run.info.experiment_id),
         )
 
     mlflow.log_param("learning_rate", learning_rate)

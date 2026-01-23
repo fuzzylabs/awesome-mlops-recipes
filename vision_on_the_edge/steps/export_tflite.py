@@ -1,17 +1,28 @@
 """Export a trained model to a SavedModel directory."""
 
-from pathlib import Path
+import logging
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404
+from pathlib import Path
 
 import torch
+from tiny_cnn import QuantTinyCNN
 from zenml import step
 
-from tiny_cnn import QuantTinyCNN
+logger = logging.getLogger(__name__)
 
 
 def _fold_constant_ops(onnx_path: Path, output_path: Path) -> Path | None:
+    """Fold constant operations in an ONNX graph.
+
+    Args:
+        onnx_path: Path to the input ONNX model.
+        output_path: Path to write the folded ONNX model.
+
+    Returns:
+        Path to the folded model, or None if no changes were made.
+    """
     try:
         import numpy as np
         import onnx
@@ -45,7 +56,11 @@ def _fold_constant_ops(onnx_path: Path, output_path: Path) -> Path | None:
         for node in list(graph.node):
             if node.op_type == "Constant":
                 attr = next(
-                    (attribute for attribute in node.attribute if attribute.name == "value"),
+                    (
+                        attribute
+                        for attribute in node.attribute
+                        if attribute.name == "value"
+                    ),
                     None,
                 )
                 if attr is None:
@@ -61,7 +76,11 @@ def _fold_constant_ops(onnx_path: Path, output_path: Path) -> Path | None:
                 if len(node.input) != 1 or node.input[0] not in initializer_map:
                     continue
                 to_type = next(
-                    (attribute for attribute in node.attribute if attribute.name == "to"),
+                    (
+                        attribute
+                        for attribute in node.attribute
+                        if attribute.name == "to"
+                    ),
                     None,
                 )
                 if to_type is None:
@@ -108,7 +127,11 @@ def _fold_constant_ops(onnx_path: Path, output_path: Path) -> Path | None:
                     result = np.clip(inputs[0], inputs[1], inputs[2])
             elif node.op_type == "ReduceMax":
                 keepdims_attr = next(
-                    (attribute for attribute in node.attribute if attribute.name == "keepdims"),
+                    (
+                        attribute
+                        for attribute in node.attribute
+                        if attribute.name == "keepdims"
+                    ),
                     None,
                 )
                 keepdims = bool(keepdims_attr.i) if keepdims_attr is not None else True
@@ -117,7 +140,11 @@ def _fold_constant_ops(onnx_path: Path, output_path: Path) -> Path | None:
                     axes = tuple(int(x) for x in inputs[1].flatten())
                 else:
                     axes_attr = next(
-                        (attribute for attribute in node.attribute if attribute.name == "axes"),
+                        (
+                            attribute
+                            for attribute in node.attribute
+                            if attribute.name == "axes"
+                        ),
                         None,
                     )
                     if axes_attr is not None:
@@ -125,10 +152,16 @@ def _fold_constant_ops(onnx_path: Path, output_path: Path) -> Path | None:
                 result = np.max(inputs[0], axis=axes, keepdims=keepdims)
             elif node.op_type == "Reshape" and len(inputs) == 2:
                 allowzero_attr = next(
-                    (attribute for attribute in node.attribute if attribute.name == "allowzero"),
+                    (
+                        attribute
+                        for attribute in node.attribute
+                        if attribute.name == "allowzero"
+                    ),
                     None,
                 )
-                allowzero = bool(allowzero_attr.i) if allowzero_attr is not None else False
+                allowzero = (
+                    bool(allowzero_attr.i) if allowzero_attr is not None else False
+                )
                 shape = [int(x) for x in inputs[1].flatten()]
                 if not allowzero:
                     shape = [
@@ -152,7 +185,7 @@ def _fold_constant_ops(onnx_path: Path, output_path: Path) -> Path | None:
     return output_path
 
 
-@step(enable_cache=False)
+@step(enable_cache=False)  # type: ignore[untyped-decorator]
 def export_saved_model_step(
     state_dict: dict[str, torch.Tensor],
     bit_w: int,
@@ -204,8 +237,10 @@ def export_saved_model_step(
             simplified_path = export_path / f"{model_name}_simplified.onnx"
             onnx.save(simplified_model, str(simplified_path))
             onnx_path_for_conversion = simplified_path
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning(
+            "ONNX simplification failed; continuing with original graph. %s", exc
+        )
 
     folded_path = _fold_constant_ops(
         onnx_path_for_conversion, export_path / f"{model_name}_folded.onnx"
@@ -230,8 +265,16 @@ def export_saved_model_step(
         onnx2tf_command.append("--not_use_onnxsim")
 
     def run_onnx2tf(command: list[str]) -> None:
+        """Run onnx2tf and retry with auto-generated params on failure.
+
+        Args:
+            command: Command list to execute.
+
+        Returns:
+            None.
+        """
         try:
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 command,
                 check=True,
                 env=env,
@@ -239,7 +282,7 @@ def export_saved_model_step(
         except subprocess.CalledProcessError:
             auto_json = saved_model_dir / f"{model_name}_auto.json"
             if auto_json.is_file():
-                subprocess.run(
+                subprocess.run(  # nosec B603
                     command + ["--param_replacement_file", str(auto_json)],
                     check=True,
                     env=env,

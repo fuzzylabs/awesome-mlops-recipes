@@ -1,15 +1,15 @@
 """Convert a SavedModel to int8 TFLite."""
 
-from pathlib import Path
 import os
-import subprocess
+import subprocess  # nosec B404
 import sys
 import tempfile
+from pathlib import Path
 
 from zenml import step
 
 
-@step(enable_cache=False)
+@step(enable_cache=False)  # type: ignore[untyped-decorator]
 def convert_int8_tflite_step(
     saved_model_dir: str,
     export_dir: str = "artifacts/edge",
@@ -38,6 +38,7 @@ def convert_int8_tflite_step(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     print(f"Converting {saved_model_path} to int8 TFLite...")
 
+    # spellchecker:off
     int8_script = """
 import sys
 from pathlib import Path
@@ -63,13 +64,16 @@ tflite_model = converter.convert()
 output_path.write_bytes(tflite_model)
 print(f"Saved int8 TFLite to {output_path}")
 """
+    # spellchecker:on
     conversion_timeout_seconds = 600
     env = os.environ.copy()
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as script_file:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".py", delete=False
+    ) as script_file:
         script_file.write(int8_script)
         script_path = script_file.name
     try:
-        subprocess.run(
+        subprocess.run(  # nosec B603
             [
                 sys.executable,
                 script_path,

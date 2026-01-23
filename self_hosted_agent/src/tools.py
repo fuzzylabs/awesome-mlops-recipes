@@ -1,15 +1,18 @@
 """Tools and MCP server configuration for the PR review agent."""
 
+from config import get_config
 from pydantic_ai import RunContext, ToolDefinition
 from pydantic_ai.mcp import MCPServerStreamableHTTP
-
-from config import get_config
 
 cfg = get_config()
 
 
 def _build_mcp_headers() -> dict[str, str]:
-    """Build headers for MCP gateway or direct GitHub MCP."""
+    """Build headers for the MCP gateway or direct GitHub MCP.
+
+    Returns:
+        dict[str, str]: HTTP headers for MCP requests.
+    """
     headers: dict[str, str] = {}
     if cfg.mcp.gateway_url:
         if cfg.mcp.gateway_auth_token:
@@ -28,11 +31,19 @@ def _build_mcp_headers() -> dict[str, str]:
 async def filter_github_tools(
     ctx: RunContext[None], tool_defs: list[ToolDefinition]
 ) -> list[ToolDefinition]:
-    """Only allow tools needed for PR review."""
+    """Filter tool definitions down to PR review needs.
+
+    Args:
+        ctx: Run context for the agent.
+        tool_defs: Available tool definitions.
+
+    Returns:
+        list[ToolDefinition]: Filtered list of tool definitions.
+    """
     allowed_tools = {
-        'search_pull_requests',       # Search PRs by title
-        'pull_request_read',          # Get PR details with different methods
-        'pull_request_review_write',  # Write operations on pull request reviews
+        "search_pull_requests",  # Search PRs by title
+        "pull_request_read",  # Get PR details with different methods
+        "pull_request_review_write",  # Write operations on pull request reviews
     }
     return [tool_def for tool_def in tool_defs if tool_def.name in allowed_tools]
 

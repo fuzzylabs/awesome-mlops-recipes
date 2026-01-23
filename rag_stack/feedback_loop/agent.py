@@ -1,8 +1,6 @@
 """Feedback loop agent using Pydantic AI to propose prompt updates."""
 
-
 import os
-from typing import Any
 
 import mlflow
 from mlflow import MlflowClient
@@ -11,7 +9,6 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from feedback_loop.feedback_store import fetch_feedback
-
 
 SYSTEM_PROMPT = """
 You are a prompt engineer improving a RAG system prompt based on user feedback.
@@ -26,6 +23,11 @@ Do not include commentary or analysis in the final output.
 
 
 def get_model() -> OpenAIChatModel:
+    """Build the OpenAI-compatible chat model.
+
+    Returns:
+        Configured chat model instance.
+    """
     model_name = os.getenv("MODEL_NAME", "Qwen/Qwen3-4B-Thinking-2507")
     base_url = os.getenv(
         "MODEL_BASE_URL",
@@ -39,11 +41,29 @@ def get_model() -> OpenAIChatModel:
 
 
 def load_prompt(prompt_name: str) -> str:
+    """Load a prompt template from MLflow.
+
+    Args:
+        prompt_name: Name of the prompt to load.
+
+    Returns:
+        Prompt template text, or empty string if missing.
+    """
     prompt = mlflow.genai.load_prompt(prompt_name)
     return prompt.template if prompt and prompt.template else ""
 
 
 def register_proposed_prompt(prompt_name: str, new_prompt: str, summary: str) -> None:
+    """Register a proposed prompt update with MLflow.
+
+    Args:
+        prompt_name: Name of the prompt to update.
+        new_prompt: Updated prompt template.
+        summary: Summary of feedback used to generate the prompt.
+
+    Returns:
+        None.
+    """
     proposed = mlflow.genai.register_prompt(
         name=prompt_name,
         template=new_prompt,
@@ -62,6 +82,11 @@ def register_proposed_prompt(prompt_name: str, new_prompt: str, summary: str) ->
 
 
 def main() -> None:
+    """Run the feedback agent to propose a prompt update.
+
+    Returns:
+        None.
+    """
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
 
     prompt_name = os.getenv("PROMPT_NAME", "rag-stack-system-prompt")
@@ -73,7 +98,8 @@ def main() -> None:
         return
 
     summary = "\n".join(
-        f"Q: {item['question']}\nA: {item['answer']}\nRating: {item.get('rating')}\nComment: {item.get('comment')}\n"
+        f"Q: {item['question']}\nA: {item['answer']}\n"
+        f"Rating: {item.get('rating')}\nComment: {item.get('comment')}\n"
         for item in feedback
     )
 

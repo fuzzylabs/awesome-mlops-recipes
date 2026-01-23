@@ -22,3 +22,10 @@ dependencies = [
     "sng4onnx>=1.0.4",
     "pip>=25.3",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# ZenML pipelines/steps require flat parameters for the framework
+"pipelines/training_pipeline.py" = ["PLR0913"]
+"steps/training.py" = ["PLR0913"]
+# Complex ONNX graph manipulation requires many branches
+"steps/export_tflite.py" = ["C901", "PLR0912", "PLR0915"]

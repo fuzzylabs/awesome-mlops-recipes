@@ -1,16 +1,14 @@
 """Entrypoint for running the vision on the edge training pipeline."""
 
 import argparse
+import os
 from functools import partial
-from typing import Any, Dict
+from typing import Any
 
-import optuna
 import mlflow
-
+import optuna
 from pipelines.training_pipeline import training_pipeline
 from zenml.client import Client
-import os
-
 
 
 def parse_args() -> argparse.Namespace:
@@ -20,12 +18,27 @@ def parse_args() -> argparse.Namespace:
         Parsed CLI arguments.
     """
     parser = argparse.ArgumentParser(description="Run the ZenML training pipeline.")
-    parser.add_argument("--num-epochs", type=int, default=5, help="Number of training epochs.")
-    parser.add_argument("--batch-size", type=int, default=16, help="Training batch size.")
-    parser.add_argument("--learning-rate", type=float, default=0.001, help="Learning rate.")
-    parser.add_argument("--bit-w", type=int, default=8, help="Quantisation bit width for weights.")
-    parser.add_argument("--bit-a", type=int, default=8, help="Quantisation bit width for activations.")
-    parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="cpu", help="Device to train on.")
+    parser.add_argument(
+        "--num-epochs", type=int, default=5, help="Number of training epochs."
+    )
+    parser.add_argument(
+        "--batch-size", type=int, default=16, help="Training batch size."
+    )
+    parser.add_argument(
+        "--learning-rate", type=float, default=0.001, help="Learning rate."
+    )
+    parser.add_argument(
+        "--bit-w", type=int, default=8, help="Quantisation bit width for weights."
+    )
+    parser.add_argument(
+        "--bit-a", type=int, default=8, help="Quantisation bit width for activations."
+    )
+    parser.add_argument(
+        "--device",
+        choices=["auto", "cpu", "cuda"],
+        default="cpu",
+        help="Device to train on.",
+    )
     parser.add_argument(
         "--optuna-trials",
         type=int,
@@ -82,13 +95,15 @@ def parse_args() -> argparse.Namespace:
 
 def run_single_training(
     args: argparse.Namespace, bit_w: int, bit_a: int, export_tflite: bool, deploy: bool
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run the pipeline once and return metrics.
 
     Args:
         args: Parsed CLI arguments.
-        bit_w: Bit width for weight quantization.
-        bit_a: Bit width for activation quantization.
+        bit_w: Bit width for weight quantisation.
+        bit_a: Bit width for activation quantisation.
+        export_tflite: Whether to export a TFLite model.
+        deploy: Whether to deploy via PlatformIO.
 
     Returns:
         A dictionary of metrics produced by the pipeline run.
@@ -111,7 +126,7 @@ def run_single_training(
         upload=not args.no_upload,
     )
 
-    # ZenML can return a PipelineRunView instead of direct outputs; try to read the evaluation artifact.
+    # ZenML may return a PipelineRunView; try to read the evaluation artifact.
     if isinstance(run_result, dict):
         return run_result
 
@@ -122,13 +137,17 @@ def run_single_training(
             output = getattr(eval_step, "output", None)
             if output is not None:
                 if hasattr(output, "read"):
-                    return output.read()
+                    return dict(output.read())
                 if hasattr(output, "load"):
-                    return output.load()
+                    return dict(output.load())
     except Exception as exc:
-        raise RuntimeError(f"Failed to retrieve metrics from pipeline run: {exc}") from exc
+        raise RuntimeError(
+            f"Failed to retrieve metrics from pipeline run: {exc}"
+        ) from exc
 
-    raise RuntimeError(f"Could not retrieve metrics; got object of type {type(run_result)}")
+    raise RuntimeError(
+        f"Could not retrieve metrics; got object of type {type(run_result)}"
+    )
 
 
 def objective(trial: optuna.Trial, args: argparse.Namespace) -> float:
@@ -179,7 +198,7 @@ def objective(trial: optuna.Trial, args: argparse.Namespace) -> float:
             }
         )
 
-        return score
+        return float(score)
 
 
 def main() -> None:
@@ -211,8 +230,8 @@ def main() -> None:
     mlflow.set_experiment("vision-on-the-edge")
 
     if args.optuna_trials > 0:
-        study = optuna.create_study(direction="maximize")
-        study.optimize(
+        study = optuna.create_study(direction="maximize")  # spellchecker:disable-line
+        study.optimize(  # spellchecker:disable-line
             partial(objective, args=args),
             n_trials=args.optuna_trials,
         )

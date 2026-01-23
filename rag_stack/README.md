@@ -272,12 +272,12 @@ Visit `http://localhost:8089/` to start the loadtest.
 
 Create the feedback table on the shared RDS instance:
 
-Start a disposable psql pod, make sure you replace `<mlflowDbPasswor>` and `<mlflowDbEndpoint>` with values from your pulumi output.
+Start a disposable psql pod, make sure you replace `<mlflowDbPassword>` and `<mlflowDbEndpoint>` with values from your pulumi output.
 ```bash
 kubectl run -it --rm psql \
   --image=postgres:16 \
   --restart=Never \
-  --env="FEEDBACK_DB_DSN=postgresql://mlflow:<mlflowDbPasswor>@<mlflowDbEndpoint>:5432/mlflow" \
+  --env="FEEDBACK_DB_DSN=postgresql://mlflow:<mlflowDbPassword>@<mlflowDbEndpoint>:5432/mlflow" \
   -- bash
 ```
 
@@ -319,7 +319,7 @@ We need to port-forward mlflow to log the evaluation:
 make portforward-mlflow
 ```
 
-We also need to port-forward rag-api to for guardrail eveluation:
+We also need to port-forward rag-api to for guardrail evaluation:
 ```bash
 make portforward-rag-api
 ```

@@ -1,12 +1,24 @@
 """Deploy a TFLite Micro model to ESP32 via PlatformIO."""
 
+import shutil
+import subprocess  # nosec B404
 from pathlib import Path
-import subprocess
 
 from zenml import step
 
 
 def _write_c_array(data: bytes, array_name: str, out_cc: Path, out_h: Path) -> None:
+    """Write binary data into C array source and header files.
+
+    Args:
+        data: Binary payload to embed.
+        array_name: C array symbol name.
+        out_cc: Output path for the C++ source file.
+        out_h: Output path for the header file.
+
+    Returns:
+        None.
+    """
     hex_bytes = ", ".join(f"0x{b:02x}" for b in data)
     out_cc.write_text(
         "\n".join(
@@ -36,7 +48,7 @@ def _write_c_array(data: bytes, array_name: str, out_cc: Path, out_h: Path) -> N
     )
 
 
-@step(enable_cache=False)
+@step(enable_cache=False)  # type: ignore[untyped-decorator]
 def deploy_platformio_step(
     tflite_model_path: str,
     platformio_project_dir: str,
@@ -78,9 +90,12 @@ def deploy_platformio_step(
     model_h_path = src_dir / "model_data.h"
     _write_c_array(model_data, "g_model", model_cc_path, model_h_path)
 
-    command = ["platformio", "run"]
+    platformio_bin = shutil.which("platformio")
+    if not platformio_bin:
+        raise FileNotFoundError("platformio executable not found on PATH")
+    command = [platformio_bin, "run"]
     if upload:
         command += ["-t", "upload"]
-    subprocess.run(command, cwd=project_dir, check=True)
+    subprocess.run(command, cwd=project_dir, check=True)  # nosec B603
 
     return f"Deployed {model_path.name} via PlatformIO"

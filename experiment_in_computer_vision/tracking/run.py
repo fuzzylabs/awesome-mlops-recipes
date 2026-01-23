@@ -5,7 +5,7 @@ import mlflow
 from tracking.logbook import get_logbook
 
 
-def start_run():
+def start_run() -> mlflow.ActiveRun:
     """Start a new MLflow run and attach the latest logbook entry.
 
     Returns:
