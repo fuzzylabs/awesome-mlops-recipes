@@ -257,6 +257,27 @@ CREATE USER context_forge_user WITH PASSWORD '<strong-password>';
 GRANT ALL PRIVILEGES ON DATABASE context_forge TO context_forge_user;
 ```
 
+Otherwise, spin up an ephemeral pod:
+```bash
+kubectl run -it --rm psql \
+  --image=postgres:16 \
+  --restart=Never \
+  --env="FEEDBACK_DB_DSN=postgresql://<mlflowDbEndpoint>/mlflow" \
+  -- bash
+```
+
+Then connect to the RDS instance:
+```bash
+psql $FEEDBACK_DB_DSN -U mlflow
+```
+
+Then, exit the ephemeral pod by:
+```bash
+exit
+```
+
+Finally, create the dedicated database using the SQL command above.
+
 You can connect using the MLflow RDS endpoint and admin credentials from the IaC outputs.
 
 Then, create the Kubernetes secret:
