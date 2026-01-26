@@ -1,4 +1,4 @@
-# Self-Hosted RAG Stack
+# 📚 Self-Hosted RAG Stack
 
 This recipe is split into two parts that build on each other:
 - Part 1 (Prototype): vLLM, Chroma, Metaflow ingestion, MLflow prompt tracking, RAGAS evals, and basic guardrails (hallucination + jailbreak).
@@ -6,7 +6,7 @@ This recipe is split into two parts that build on each other:
 
 Cook Time: ~1-2 hours (excluding model download and indexing)
 
-## Ingredients
+## 🥗 Ingredients
 
 ### Part 1: Prototype
 - Data pipeline: Metaflow (Kubernetes)
@@ -24,7 +24,7 @@ Cook Time: ~1-2 hours (excluding model download and indexing)
 - Feedback loop: Pydantic AI + Postgres
 - Business guardrails: Guardrails AI (financial advice, enabled at runtime in Part 2)
 
-## Project Structure
+## 🗄️ Project Structure
 
 ```
 .
@@ -47,7 +47,7 @@ Cook Time: ~1-2 hours (excluding model download and indexing)
     └── mlflow/            # MLflow installation scripts
 ```
 
-## Infrastructure Requirements
+## ☁️ Infrastructure Requirements
 
 This recipe assumes the AWS infrastructure is provisioned using the IaC repo:
 https://github.com/fuzzylabs/awesome-mlops-recipes-iac
@@ -61,7 +61,7 @@ Expected resources:
 
 Part 2 reuses the same AWS resources.
 
-## Prerequisites
+## ✅ Prerequisites
 
 1. Kubernetes cluster (EKS with 1 GPU node and 1 CPU node)
 2. AWS credentials configured
@@ -111,7 +111,7 @@ Other placeholders:
 - `k8s/monitoring/values.yaml` -> `grafana.adminPassword` (Part 2)
 - `FEEDBACK_DB_DSN` -> Postgres DSN for the RDS instance (Part 2)
 
-## Part 1: Prototype Quick Start
+## 🚀 Part 1: Prototype Quick Start
 
 Complete these steps for the prototype. Stop after Step 6 if you do not want the production add-ons.
 
@@ -209,7 +209,7 @@ curl -X POST http://localhost:8080/query \
   -d '{"question":"What is the revenue of Company X in 2023?"}'
 ```
 
-## Part 2: Production Add-ons
+## ➕ Part 2: Production Add-ons
 
 These steps assume Part 1 is deployed and running.
 
