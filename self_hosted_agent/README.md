@@ -317,26 +317,69 @@ make deploy-context-forge
 
 ### 3. Register the GitHub MCP Server and Tools
 
-Use the ContextForge UI or API to register the GitHub MCP server and expose only the tools your agent needs:
+Use the ContextForge API to register the GitHub MCP server and expose only the tools your agent needs:
 - `search_pull_requests`
 - `pull_request_read`
 - `pull_request_review_write`
 
 Store the upstream GitHub token in ContextForge during registration so the agent never sees it.
 
+To register:
+```bash
+export GITHUB_TOKEN="<YOUR_GITHUB_TOKEN"
+
+curl -s -X POST http://localhost:4444/gateways \
+  -H "Content-Type: application/json" \
+  -d '{
+        "name": "github-mcp",
+        "url": "https://api.githubcopilot.com/mcp/",
+        "transport": "STREAMABLEHTTP",
+        "auth_type": "bearer",
+        "auth_token": "'"$GITHUB_TOKEN"'"
+      }'
+```
+
+Get the registered gateway ID:
+```bash
+curl -s http://localhost:4444/gateways | jq
+```
+
+List tools discovered via that gateway:
+```bash
+curl -s "http://localhost:4444/tools?gateway_id=<GATEWAY_ID>&limit=0" | jq
+```
+
+Create a virtual server with just the allowed tools:
+```bash
+curl -s -X POST http://localhost:4444/servers \
+  -H "Content-Type: application/json" \
+  -d '{
+        "server": {
+          "name": "github-pr-review",
+          "description": "Allowlisted GitHub tools",
+          "associated_tools": [
+            "ac909d70771942f79a4dc20e65fd1b9d",
+            "13930074f3d0485d8b4ea8fc6922df74",
+            "b489773abba446819eb029f580bb9e5b"
+          ]
+        }
+      }' | jq
+```
+
+
 ### 4. Point the Agent at the Gateway
 
 Update `src/config.yaml` (local) or `k8s/agent/configmap.yaml` (Kubernetes):
 ```yaml
 mcp:
-  gateway_url: "http://context-forge.context-forge.svc.cluster.local:4444/mcp"
+  gateway_url: "http://context-forge.context-forge.svc.cluster.local:4444/servers/<VIRTUAL_SERVER_UUID>/mcp"
   gateway_auth_token: ""
   gateway_forward_github_token: false
 ```
 
-Then restart the agent:
+For k8s, apply the updated conifgmap:
 ```bash
-make restart-agent
+kubectl apply -f k8s/agent/configmap.yaml
 ```
 
 > **Auth Note:** If you enable `AUTH_REQUIRED` in the gateway, set `gateway_auth_token` (or `MCP_GATEWAY_TOKEN`) so the agent can authenticate.
@@ -345,6 +388,26 @@ make restart-agent
 
 - Tool calls should now flow through ContextForge with allowlisted tools and schema validation.
 - Tool invocation telemetry is exported to Jaeger/Logfire via OpenTelemetry.
+- Restart the agent after pointing it at the ContextForge virtual server:
+```bash
+make restart-agent
+```
+- Port-forward the agent, ContextForge, and Jaeger UIs (In separate terminals):
+```bash
+make portforward-agent
+make portforward-context-forge
+make portforward-jaeger
+```
+- Invoke the agent and verify tool calls are routed through the gateway:
+```bash
+curl -X POST http://localhost:8080/review \
+  -H "Content-Type: application/json" \
+  -d '{"pr_title": "Fix authentication flow"}'
+```
+- Check ContextForge logs and Jaeger traces for tool-call activity:
+```bash
+make logs-context-forge
+```
 
 ## 🎯 Evaluation
 
