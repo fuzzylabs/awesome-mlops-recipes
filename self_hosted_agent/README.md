@@ -255,6 +255,8 @@ First, create a dedicated database and user in the existing RDS instance (from t
 CREATE DATABASE context_forge;
 CREATE USER context_forge_user WITH PASSWORD '<strong-password>';
 GRANT ALL PRIVILEGES ON DATABASE context_forge TO context_forge_user;
+\c context_forge
+GRANT USAGE, CREATE ON SCHEMA public TO context_forge_user;
 ```
 
 Otherwise, spin up an ephemeral pod:
@@ -358,9 +360,9 @@ curl -s -X POST http://localhost:4444/servers \
           "name": "github-pr-review",
           "description": "Allowlisted GitHub tools",
           "associated_tools": [
-            "ac909d70771942f79a4dc20e65fd1b9d",
-            "13930074f3d0485d8b4ea8fc6922df74",
-            "b489773abba446819eb029f580bb9e5b"
+            "<search_pull_requests ID>",
+            "<pull_request_read ID>",
+            "<pull_request_review_write ID>"
           ]
         }
       }' | jq
@@ -372,7 +374,7 @@ curl -s -X POST http://localhost:4444/servers \
 Update `src/config.yaml` (local) or `k8s/agent/configmap.yaml` (Kubernetes):
 ```yaml
 mcp:
-  gateway_url: "http://context-forge.context-forge.svc.cluster.local:4444/servers/<VIRTUAL_SERVER_UUID>/mcp"
+  gateway_url: "http://context-forge.context-forge.svc.cluster.local:4444/servers/2b522ecbcc6f4e92837bd31077fd7445/mcp"
   gateway_auth_token: ""
   gateway_forward_github_token: false
 ```
