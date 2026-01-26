@@ -326,7 +326,7 @@ Store the upstream GitHub token in ContextForge during registration so the agent
 
 To register:
 ```bash
-export GITHUB_TOKEN="<YOUR_GITHUB_TOKEN"
+export GITHUB_TOKEN="<YOUR_GITHUB_TOKEN>"
 
 curl -s -X POST http://localhost:4444/gateways \
   -H "Content-Type: application/json" \
