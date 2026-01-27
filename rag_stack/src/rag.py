@@ -191,6 +191,7 @@ class RagService:
             ],
             "temperature": self.config.generation.temperature,
         }
+        logger.info("Base URL: %s", self.config.generation.base_url)
         response = requests.post(
             f"{self.config.generation.base_url}/chat/completions",
             json=payload,

@@ -222,20 +222,23 @@ helm repo update
 helm upgrade --install kuberay-operator kuberay/kuberay-operator -n kuberay --create-namespace
 ```
 
+Update the ray serve ECR url in `k8s/ray-serve/rayservice.yaml`.
+
 Build and deploy the Ray Serve proxy:
 ```bash
 make build-rayserve-image
 make setup-ray
 ```
 
-Update `src/config.yaml` so `generation.base_url` points at Ray Serve:
+Update `k8s/rag-api/configmap.yaml` so `generation.base_url` points at Ray Serve:
 ```
 http://rayserve-vllm-serve-svc.rayserve.svc.cluster.local:8000/v1
 ```
 
-Rebuild and redeploy the RAG API to pick up the change:
+Reapply the configmap to pick up the change:
 ```bash
-make setup-rag-api
+kubectl apply -f k8s/rag-api/configmap.yaml
+kubectl rollout restart deployment/rag-api -n rag-api
 ```
 
 ### 8. Enable monitoring (Prometheus + Grafana)

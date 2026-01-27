@@ -1,5 +1,7 @@
 """FastAPI server for the RAG stack."""
 
+import logging
+import os
 import time
 from typing import Any
 
@@ -40,6 +42,14 @@ class QueryResponse(BaseModel):  # type: ignore[misc]
     answer: str
     chunks: list[dict[str, Any]]
 
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+root_logger = logging.getLogger()
+if not root_logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(levelname)s %(name)s - %(message)s"))
+    root_logger.addHandler(handler)
+root_logger.setLevel(LOG_LEVEL)
 
 app = FastAPI(title="RAG Stack", version="0.1.0")
 

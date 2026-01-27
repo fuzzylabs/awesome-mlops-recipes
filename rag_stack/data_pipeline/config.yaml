@@ -1,9 +1,9 @@
 dataset:
   # Local 10-K filings directory (auto-fetched when fetch_on_start is true)
   source_dir: data_pipeline/10k_filings
-  doc_limit: 500  # Max documents to process
+  doc_limit: 50  # Max documents to process
   fetch_on_start: true
-  fetch_count: 500  # Number of companies to fetch per run
+  fetch_count: 50  # Number of companies to fetch per run
 
 chunking:
   chunk_size: 800
