@@ -1,6 +1,5 @@
 """Fetch feedback from Postgres or fallback to sample data."""
 
-
 import json
 import os
 from pathlib import Path
@@ -8,11 +7,18 @@ from typing import Any
 
 import psycopg
 
-
 SAMPLE_PATH = Path("feedback_loop/sample_feedback.jsonl")
 
 
 def fetch_feedback(limit: int = 50) -> list[dict[str, Any]]:
+    """Fetch feedback rows from Postgres or fallback sample data.
+
+    Args:
+        limit: Maximum number of feedback rows to return.
+
+    Returns:
+        List of feedback dictionaries.
+    """
     dsn = os.getenv("FEEDBACK_DB_DSN")
     if not dsn:
         return _load_sample_feedback(limit)
@@ -21,10 +27,9 @@ def fetch_feedback(limit: int = 50) -> list[dict[str, Any]]:
         "SELECT question, answer, rating, comment, created_at "
         "FROM rag_feedback ORDER BY created_at DESC LIMIT %s"
     )
-    with psycopg.connect(dsn) as conn:
-        with conn.cursor() as cur:
-            cur.execute(query, (limit,))
-            rows = cur.fetchall()
+    with psycopg.connect(dsn) as conn, conn.cursor() as cur:
+        cur.execute(query, (limit,))
+        rows = cur.fetchall()
 
     return [
         {
@@ -39,6 +44,14 @@ def fetch_feedback(limit: int = 50) -> list[dict[str, Any]]:
 
 
 def _load_sample_feedback(limit: int) -> list[dict[str, Any]]:
+    """Load feedback entries from the sample JSONL file.
+
+    Args:
+        limit: Maximum number of rows to return.
+
+    Returns:
+        List of feedback dictionaries.
+    """
     if not SAMPLE_PATH.exists():
         return []
     records: list[dict[str, Any]] = []

@@ -3,8 +3,16 @@
 import mlflow
 
 
-def create_new_prompt(prompt_name: str, initial_template: str):
-    """Create a new prompt in MLflow prompt registry."""
+def create_new_prompt(prompt_name: str, initial_template: str) -> None:
+    """Create a new prompt in MLflow prompt registry.
+
+    Args:
+        prompt_name: Name of the prompt to register.
+        initial_template: Template text for the prompt.
+
+    Returns:
+        None.
+    """
     mlflow.set_tracking_uri("http://localhost:5000")
 
     new_prompt = mlflow.genai.register_prompt(
@@ -13,8 +21,6 @@ def create_new_prompt(prompt_name: str, initial_template: str):
         commit_message="New prompt",
     )
     print(f"New prompt created: {new_prompt.name}")
-
-    return new_prompt
 
 
 if __name__ == "__main__":

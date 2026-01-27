@@ -1,32 +1,55 @@
 """FastAPI server for the RAG stack."""
 
-
+import logging
+import os
 import time
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from src.config import load_config
 from src.guardrails import apply_financial_advice_guardrail
-from src.rag import RagService
 from src.metrics import (
     GUARDRAIL_FAILURES,
     REQUEST_COUNT,
     REQUEST_LATENCY,
-    RETRIEVED_CHUNKS,
     RERANKED_CHUNKS,
+    RETRIEVED_CHUNKS,
     metrics_response,
 )
+from src.rag import RagService
 
 
-class QueryRequest(BaseModel):
+class QueryRequest(BaseModel):  # type: ignore[misc]
+    """Request payload for RAG queries.
+
+    Args:
+        question: User question string.
+    """
+
     question: str
 
 
-class QueryResponse(BaseModel):
-    answer: str
-    chunks: list[dict]
+class QueryResponse(BaseModel):  # type: ignore[misc]
+    """Response payload for RAG queries.
 
+    Args:
+        answer: Model-generated answer.
+        chunks: Retrieved chunk payloads.
+    """
+
+    answer: str
+    chunks: list[dict[str, Any]]
+
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+root_logger = logging.getLogger()
+if not root_logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(levelname)s %(name)s - %(message)s"))
+    root_logger.addHandler(handler)
+root_logger.setLevel(LOG_LEVEL)
 
 app = FastAPI(title="RAG Stack", version="0.1.0")
 
@@ -34,18 +57,36 @@ config = load_config()
 rag_service = RagService(config)
 
 
-@app.get("/health")
+@app.get("/health")  # type: ignore[untyped-decorator]
 def health() -> dict[str, str]:
+    """Report service health.
+
+    Returns:
+        Simple status payload.
+    """
     return {"status": "ok"}
 
 
-@app.get("/metrics")
-def metrics():
+@app.get("/metrics")  # type: ignore[untyped-decorator]
+def metrics() -> Any:
+    """Expose Prometheus metrics.
+
+    Returns:
+        Metrics response payload.
+    """
     return metrics_response()
 
 
-@app.post("/query", response_model=QueryResponse)
+@app.post("/query", response_model=QueryResponse)  # type: ignore[untyped-decorator]
 def query(request: QueryRequest) -> QueryResponse:
+    """Answer a RAG query and emit metrics.
+
+    Args:
+        request: Query request payload.
+
+    Returns:
+        Structured query response.
+    """
     if not request.question.strip():
         raise HTTPException(status_code=400, detail="Question is required")
     start = time.perf_counter()

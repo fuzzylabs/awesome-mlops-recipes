@@ -4411,6 +4411,11 @@ wheels = [
 name = "rag-stack"
 version = "0.1.0"
 source = { editable = "." }
+dependencies = [
+    { name = "chromadb" },
+    { name = "mlflow" },
+    { name = "sentence-transformers" },
+]
 
 [package.dev-dependencies]
 eval = [
@@ -4427,20 +4432,22 @@ pipeline = [
     { name = "metaflow" },
 ]
 prod = [
-    { name = "chromadb" },
     { name = "fastapi" },
     { name = "guardrails-ai" },
-    { name = "mlflow" },
     { name = "prometheus-client" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
     { name = "requests" },
-    { name = "sentence-transformers" },
     { name = "uvicorn" },
 ]
 
 [package.metadata]
+requires-dist = [
+    { name = "chromadb", specifier = ">=1.4.1" },
+    { name = "mlflow", specifier = ">=3.8.1" },
+    { name = "sentence-transformers", specifier = ">=5.2.0" },
+]
 
 [package.metadata.requires-dev]
 eval = [
@@ -4449,7 +4456,7 @@ eval = [
 ]
 feedback = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.0" },
-    { name = "pydantic-ai", extras = ["openai"], specifier = ">=1.22.0" },
+    { name = "pydantic-ai", specifier = ">=1.30.1" },
 ]
 pipeline = [
     { name = "beautifulsoup4", specifier = ">=4.12.0" },
@@ -4457,16 +4464,13 @@ pipeline = [
     { name = "metaflow", specifier = ">=2.12.0" },
 ]
 prod = [
-    { name = "chromadb", specifier = ">=0.5.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "guardrails-ai", specifier = ">=0.7.2" },
-    { name = "mlflow", specifier = ">=3.6.0" },
     { name = "prometheus-client", specifier = ">=0.20.0" },
     { name = "pydantic", specifier = ">=2.8.0" },
     { name = "pydantic-settings", specifier = ">=2.4.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests", specifier = ">=2.32.0" },
-    { name = "sentence-transformers", specifier = ">=3.0.0" },
     { name = "uvicorn", specifier = ">=0.30.0" },
 ]
 

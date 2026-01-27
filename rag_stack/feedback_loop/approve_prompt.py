@@ -1,6 +1,5 @@
 """Approve a proposed prompt version in MLflow."""
 
-
 import os
 
 import mlflow
@@ -8,6 +7,11 @@ from mlflow import MlflowClient
 
 
 def main() -> None:
+    """Approve a proposed prompt in MLflow.
+
+    Returns:
+        None.
+    """
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
 
     prompt_name = os.getenv("PROMPT_NAME", "rag-stack-system-prompt")

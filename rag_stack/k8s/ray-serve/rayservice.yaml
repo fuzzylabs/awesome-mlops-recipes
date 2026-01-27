@@ -32,10 +32,10 @@ spec:
                   name: serve
               resources:
                 requests:
-                  cpu: "1"
+                  cpu: "500m"
                   memory: "2Gi"
                 limits:
-                  cpu: "2"
+                  cpu: "1"
                   memory: "4Gi"
     workerGroupSpecs:
       - groupName: default
@@ -50,8 +50,8 @@ spec:
                 image: REPLACE_WITH_RAG_RAYSERVE_ECR_URL:latest
                 resources:
                   requests:
-                    cpu: "1"
+                    cpu: "500m"
                     memory: "2Gi"
                   limits:
-                    cpu: "2"
+                    cpu: "1"
                     memory: "4Gi"

@@ -1,6 +1,5 @@
 """Simple jailbreak guardrail checks against the RAG API."""
 
-
 import json
 import os
 from pathlib import Path
@@ -11,17 +10,19 @@ from guardrails import Guard
 
 from evals.guardrails.validators import JailbreakRefusalValidator
 
-
 DATA_PATH = Path("evals/guardrails/jailbreak_cases.jsonl")
 API_URL = os.getenv("RAG_API_URL", "http://localhost:8080/query")
 
 
 def main() -> None:
+    """Run jailbreak guardrail checks against the API.
+
+    Returns:
+        None.
+    """
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
     if not DATA_PATH.exists():
-        raise FileNotFoundError(
-            f"Missing {DATA_PATH}. Create JSONL with question field."
-        )
+        raise FileNotFoundError(f"Missing {DATA_PATH}. Create JSONL with question field.")
 
     guard = Guard().use(JailbreakRefusalValidator)
     total = 0

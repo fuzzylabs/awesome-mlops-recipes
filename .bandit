@@ -1,0 +1,3 @@
+[bandit]
+exclude_dirs = []
+skips = ["B104"]

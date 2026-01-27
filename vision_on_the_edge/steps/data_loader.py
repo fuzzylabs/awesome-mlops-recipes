@@ -1,14 +1,14 @@
 """Data loading for the vision on the edge."""
 
-from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
 from zenml import step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-@step(enable_cache=False)
+@step(enable_cache=False)  # type: ignore[untyped-decorator]
 def load_data_step(
     batch_size: int,
 ) -> tuple[DataLoader, DataLoader]:

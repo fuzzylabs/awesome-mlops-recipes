@@ -1,16 +1,18 @@
 """Core retrieval and generation logic."""
 
-
+import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
-import requests
-from sentence_transformers import CrossEncoder, SentenceTransformer
 import chromadb
 import mlflow
+import requests
+from sentence_transformers import CrossEncoder, SentenceTransformer
 
 from src.config import AppConfig
 
+logger = logging.getLogger(__name__)
 
 DEFAULT_SYSTEM_PROMPT = (
     "You are a retrieval-augmented assistant for financial filings. "
@@ -22,6 +24,15 @@ DEFAULT_SYSTEM_PROMPT = (
 
 @dataclass
 class RetrievedChunk:
+    """Container for retrieved chunks and metadata.
+
+    Args:
+        chunk_id: Unique identifier for the chunk.
+        text: Raw chunk content.
+        metadata: Metadata for the chunk.
+        score: Optional reranking score.
+    """
+
     chunk_id: str
     text: str
     metadata: dict[str, Any]
@@ -32,6 +43,11 @@ class RagService:
     """Retrieve from Chroma and generate answers using vLLM."""
 
     def __init__(self, config: AppConfig) -> None:
+        """Initialise the service and model clients.
+
+        Args:
+            config: Application configuration values.
+        """
         self.config = config
         self._embedder = SentenceTransformer(config.models.embedding)
         self._reranker = CrossEncoder(config.models.reranker)
@@ -39,26 +55,45 @@ class RagService:
             host=config.chroma.host,
             port=config.chroma.port,
         )
-        self._collection = self._chroma.get_or_create_collection(
-            name=config.chroma.collection
-        )
+        self._collection = self._chroma.get_or_create_collection(name=config.chroma.collection)
         self._system_prompt = self._load_prompt()
 
     def _load_prompt(self) -> str:
+        """Load the system prompt from MLflow or fallback to the default.
+
+        Returns:
+            The prompt text to use for generation.
+        """
         prompt_name = "rag-stack-system-prompt"
         try:
             mlflow.set_tracking_uri(self.config.mlflow.tracking_uri)
             prompt = mlflow.genai.load_prompt(prompt_name)
-            if prompt and prompt.template:
-                return prompt.template
-        except Exception:
-            pass
+            if prompt and hasattr(prompt, "template") and prompt.template:
+                return prompt.template  # type: ignore[no-any-return]
+        except Exception as exc:
+            logger.warning("Failed to load prompt from MLflow; using default. %s", exc)
         return DEFAULT_SYSTEM_PROMPT
 
     def _embed(self, text: str) -> list[float]:
-        return self._embedder.encode(text, normalize_embeddings=True).tolist()
+        """Embed text into a dense vector representation.
+
+        Args:
+            text: Input text to embed.
+
+        Returns:
+            The embedding vector.
+        """
+        return self._embedder.encode(text, normalize_embeddings=True).tolist()  # type: ignore[no-any-return]
 
     def retrieve(self, question: str) -> tuple[list[RetrievedChunk], int]:
+        """Retrieve and rerank chunks for a question.
+
+        Args:
+            question: User question to retrieve context for.
+
+        Returns:
+            A tuple of reranked chunks and the raw retrieved count.
+        """
         query_embedding = self._embed(question)
         result = self._collection.query(
             query_embeddings=[query_embedding],
@@ -82,6 +117,15 @@ class RagService:
         return self._rerank(question, chunks), retrieved_count
 
     def _rerank(self, question: str, chunks: Iterable[RetrievedChunk]) -> list[RetrievedChunk]:
+        """Rerank retrieved chunks using a cross-encoder.
+
+        Args:
+            question: Question used for scoring.
+            chunks: Retrieved chunks to rerank.
+
+        Returns:
+            The top reranked chunks.
+        """
         chunk_list = list(chunks)
         if not chunk_list:
             return []
@@ -93,6 +137,14 @@ class RagService:
         return chunk_list[: self.config.retrieval.rerank_k]
 
     def answer(self, question: str) -> dict[str, Any]:
+        """Answer a question using retrieved context.
+
+        Args:
+            question: User question to answer.
+
+        Returns:
+            The response payload with answer and metadata.
+        """
         chunks, retrieved_count = self.retrieve(question)
         context_block = self._format_context(chunks)
         user_prompt = (
@@ -109,14 +161,28 @@ class RagService:
         }
 
     def _format_context(self, chunks: Iterable[RetrievedChunk]) -> str:
+        """Format chunks into a single context block.
+
+        Args:
+            chunks: Chunks to format.
+
+        Returns:
+            The formatted context string.
+        """
         parts = []
         for chunk in chunks:
-            parts.append(
-                f"[chunk_id={chunk.chunk_id}]\n{chunk.text}"
-            )
+            parts.append(f"[chunk_id={chunk.chunk_id}]\n{chunk.text}")
         return "\n\n".join(parts)
 
     def _call_vllm(self, user_prompt: str) -> str:
+        """Invoke the vLLM chat completion endpoint.
+
+        Args:
+            user_prompt: User prompt to send to the model.
+
+        Returns:
+            The model response text.
+        """
         payload = {
             "model": self.config.generation.model,
             "messages": [
@@ -125,6 +191,7 @@ class RagService:
             ],
             "temperature": self.config.generation.temperature,
         }
+        logger.info("Base URL: %s", self.config.generation.base_url)
         response = requests.post(
             f"{self.config.generation.base_url}/chat/completions",
             json=payload,
@@ -132,4 +199,4 @@ class RagService:
         )
         response.raise_for_status()
         data = response.json()
-        return data["choices"][0]["message"]["content"].strip()
+        return data["choices"][0]["message"]["content"].strip()  # type: ignore[no-any-return]

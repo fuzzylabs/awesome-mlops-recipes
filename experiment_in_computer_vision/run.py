@@ -6,7 +6,11 @@ from pipelines.training_pipeline import training_pipeline
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse CLI arguments for the training pipeline."""
+    """Parse CLI arguments for the training pipeline.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+    """
     parser = argparse.ArgumentParser(description="Run the ZenML training pipeline.")
     parser.add_argument("--data-dir", default="./data", help="Path to the training data root.")
     parser.add_argument("--num-epochs", type=int, default=10, help="Number of training epochs.")
@@ -28,6 +32,7 @@ def main() -> None:
         learning_rate=args.learning_rate,
         seed=args.seed,
     )
+
 
 if __name__ == "__main__":
     main()

@@ -5,8 +5,8 @@
 #include "model_data.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
-#include "tensorflow/lite/version.h"
 
 namespace {
 constexpr int kTensorArenaSize = 64 * 1024;
@@ -19,16 +19,10 @@ void setup() {
   Serial.println("Vision on the Edge: TFLite Micro");
 
   const tflite::Model *model = tflite::GetModel(g_model);
-  if (model->version() != TFLITE_SCHEMA_VERSION) {
-    Serial.println("Model schema mismatch.");
-    while (true) {
-      delay(1000);
-    }
-  }
-
+  static tflite::MicroErrorReporter error_reporter;
   static tflite::AllOpsResolver resolver;
   static tflite::MicroInterpreter interpreter(model, resolver, tensor_arena,
-                                               kTensorArenaSize);
+                                              kTensorArenaSize, &error_reporter);
   if (interpreter.AllocateTensors() != kTfLiteOk) {
     Serial.println("AllocateTensors failed.");
     while (true) {

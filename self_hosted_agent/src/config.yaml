@@ -5,12 +5,12 @@
 model:
   # Choose: 'vllm', or 'ollama'
   provider: "ollama"
-  
+
   # Ollama settings
   ollama:
     model_name: "Qwen/Qwen3-4B-Thinking-2507"
     base_url: "http://localhost:8000/v1"
-  
+
   # vLLM settings (self-hosted in Kubernetes)
   vllm:
     model_name: "Qwen/Qwen3-4B-Thinking-2507"

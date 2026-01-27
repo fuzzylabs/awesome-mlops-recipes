@@ -1,10 +1,8 @@
 """Locust workload for the RAG API."""
 
-
-import random
+import secrets
 
 from locust import HttpUser, between, task
-
 
 QUESTIONS = [
     "Delta in CBOE Data & Access Solutions rev from 2021-23.",
@@ -14,10 +12,17 @@ QUESTIONS = [
 ]
 
 
-class RagUser(HttpUser):
+class RagUser(HttpUser):  # type: ignore[misc]
+    """Locust user that submits RAG queries."""
+
     wait_time = between(1, 3)
 
-    @task
+    @task  # type: ignore[untyped-decorator]
     def query(self) -> None:
-        question = random.choice(QUESTIONS)
+        """Submit a query request to the RAG API.
+
+        Returns:
+            None.
+        """
+        question = secrets.choice(QUESTIONS)
         self.client.post("/query", json={"question": question})

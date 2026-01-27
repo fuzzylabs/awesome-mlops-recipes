@@ -1,17 +1,16 @@
 """Training step."""
 
-from zenml import step
-from zenml.logger import get_logger
-from torch import nn, optim
-from torch.utils.data import DataLoader
 import torch
 from tiny_cnn import QuantTinyCNN
-from zenml.integrations.constants import PYTORCH
+from torch import nn, optim
+from torch.utils.data import DataLoader
+from zenml import step
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-@step(enable_cache=False)
+@step(enable_cache=False)  # type: ignore[untyped-decorator]
 def train_step(
     device: str,
     train_dataloader: DataLoader,
@@ -27,13 +26,12 @@ def train_step(
         train_dataloader: DataLoader for training data.
         lr: Learning rate.
         num_epochs: Number of epochs to train for.
-        bit_w: Weight quantization bits used for reconstruction.
-        bit_a: Activation quantization bits used for reconstruction.
+        bit_w: Weight quantisation bits used for reconstruction.
+        bit_a: Activation quantisation bits used for reconstruction.
 
     Returns:
         Dictionary containing the state dict of the model.
     """
-
     model = QuantTinyCNN(num_classes=10, bit_w=bit_w, bit_a=bit_a).to(device)
 
     loss_fn = nn.CrossEntropyLoss()
@@ -52,7 +50,7 @@ def train_step(
             outputs = model(inputs)
             loss = loss_fn(outputs, labels)
 
-            # Backward pass and optimize
+            # Backward pass and optimise
             loss.backward()
             optimiser.step()
 
@@ -64,6 +62,6 @@ def train_step(
                     f"Loss: {loss.item():.4f}"
                 )
 
-    # Move to CPU before returning to avoid device-specific serialization issues
+    # Move to CPU before returning to avoid device-specific serialisation issues
     model = model.cpu()
-    return model.state_dict()
+    return dict(model.state_dict())

@@ -1,15 +1,13 @@
 """Runtime guardrails for the RAG API."""
 
-
 import re
+from typing import Any
 
 from guardrails import Guard
 from guardrails.validators import FailResult, PassResult, Validator, register_validator
 
-
 FINANCIAL_ADVICE_REFUSAL = (
-    "I cannot provide financial advice or investment recommendations. "
-    "I am not a financial advisor."
+    "I cannot provide financial advice or investment recommendations. I am not a financial advisor."
 )
 
 _FINANCIAL_ADVICE_PATTERNS = [
@@ -34,6 +32,14 @@ def is_financial_advice_request(question: str) -> bool:
 
 
 def _is_financial_advice_refusal(answer: str) -> bool:
+    """Check whether an answer contains refusal language.
+
+    Args:
+        answer: Model response to inspect.
+
+    Returns:
+        True if the response looks like a refusal, False otherwise.
+    """
     lowered = answer.lower()
     return (
         "financial advice" in lowered
@@ -43,10 +49,19 @@ def _is_financial_advice_refusal(answer: str) -> bool:
 
 
 @register_validator(name="financial_advice_refusal", data_type="string")
-class FinancialAdviceRefusalValidator(Validator):
+class FinancialAdviceRefusalValidator(Validator):  # type: ignore[misc]
     """Validate that the model refuses financial advice requests."""
 
-    def _validate(self, value: str, metadata: dict) -> PassResult | FailResult:
+    def _validate(self, value: str, metadata: dict[str, Any]) -> PassResult | FailResult:
+        """Validate refusal behaviour based on metadata flags.
+
+        Args:
+            value: Model response to validate.
+            metadata: Validation metadata for guardrails.
+
+        Returns:
+            The validation result.
+        """
         must_refuse = bool(metadata.get("must_refuse", False))
         if not must_refuse:
             return PassResult()
@@ -59,7 +74,15 @@ _FINANCIAL_ADVICE_GUARD = Guard().use(FinancialAdviceRefusalValidator)
 
 
 def apply_financial_advice_guardrail(question: str, answer: str) -> tuple[str, bool]:
-    """Return a refusal response when financial advice must be blocked."""
+    """Return a refusal response when financial advice must be blocked.
+
+    Args:
+        question: User question to answer.
+        answer: Model response to validate.
+
+    Returns:
+        The refusal response and a flag indicating whether the refusal was applied.
+    """
     if not is_financial_advice_request(question):
         return answer, False
     outcome = _FINANCIAL_ADVICE_GUARD.validate(answer, metadata={"must_refuse": True})

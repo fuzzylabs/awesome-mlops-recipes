@@ -65,7 +65,7 @@ mlflow server --app-name basic-auth --backend-store-uri sqlite:///mlflow.db --po
 
 ```bash
 source .venv/bin/activate
-export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES # This is requried if you are on a Mac
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES # This is required if you are on a Mac # spellchecker:disable-line
 zenml login --local
 ```
 

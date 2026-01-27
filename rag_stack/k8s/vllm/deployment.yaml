@@ -26,7 +26,7 @@ spec:
       - name: cache-volume
         persistentVolumeClaim:
           claimName: qwen3
-          
+
       # vLLM needs to access the host's shared memory for tensor parallel inference.
       - name: shm
         emptyDir:

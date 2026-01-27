@@ -94,4 +94,3 @@ echo "To delete everything:"
 echo "  ./teardown.sh"
 echo ""
 echo "[OK] Deployment complete"
-

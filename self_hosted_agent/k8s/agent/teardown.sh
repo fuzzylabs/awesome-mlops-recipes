@@ -60,4 +60,3 @@ echo "  Teardown Complete"
 echo "================================================"
 echo ""
 echo "[OK] All PR Review Agent resources have been removed"
-

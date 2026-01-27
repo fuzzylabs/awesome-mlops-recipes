@@ -1,0 +1,105 @@
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-toml
+      - id: check-yaml
+        args: ["--unsafe"] # only check syntax for yaml files
+      - id: check-json
+      - id: mixed-line-ending
+        files: "\\.(py|txt|yaml|json|md|toml|lock|cfg|html|sh|js|yml)$"
+      - id: trailing-whitespace
+        files: "\\.(py|txt|yaml|json|md|toml|lock|cfg|html|sh|js|yml)$"
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-case-conflict
+      - id: requirements-txt-fixer
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.14.13
+    hooks:
+      # Run the linter.
+      - id: ruff-check
+        name: ruff-check (experiment_in_computer_vision)
+        files: ^experiment_in_computer_vision/.*\.py$
+      # Run the formatter.
+      - id: ruff-format
+        name: ruff-format (experiment_in_computer_vision)
+        files: ^experiment_in_computer_vision/.*\.py$
+      - id: ruff-check
+        name: ruff-check (rag_stack)
+        files: ^rag_stack/.*\.py$
+      - id: ruff-format
+        name: ruff-format (rag_stack)
+        files: ^rag_stack/.*\.py$
+      - id: ruff-check
+        name: ruff-check (self_hosted_agent)
+        files: ^self_hosted_agent/.*\.py$
+      - id: ruff-format
+        name: ruff-format (self_hosted_agent)
+        files: ^self_hosted_agent/.*\.py$
+      - id: ruff-check
+        name: ruff-check (vision_on_the_edge)
+        files: ^vision_on_the_edge/.*\.py$
+      - id: ruff-format
+        name: ruff-format (vision_on_the_edge)
+        files: ^vision_on_the_edge/.*\.py$
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.19.1
+    hooks:
+      - id: mypy
+        name: mypy (experiment_in_computer_vision)
+        args:
+          - "--config-file=mypy.ini"
+          - "--install-types"
+          - "--non-interactive"
+        files: ^experiment_in_computer_vision/.*\.py$
+      - id: mypy
+        name: mypy (rag_stack)
+        args:
+          - "--config-file=mypy.ini"
+          - "--install-types"
+          - "--non-interactive"
+        files: ^rag_stack/.*\.py$
+      - id: mypy
+        name: mypy (self_hosted_agent)
+        args:
+          - "--config-file=mypy.ini"
+          - "--install-types"
+          - "--non-interactive"
+        files: ^self_hosted_agent/.*\.py$
+      - id: mypy
+        name: mypy (vision_on_the_edge)
+        args:
+          - "--config-file=mypy.ini"
+          - "--install-types"
+          - "--non-interactive"
+        files: ^vision_on_the_edge/.*\.py$
+
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.42.1
+    hooks:
+      - id: typos
+        args: [--config=typos.toml]
+        pass_filenames: false
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.3
+    hooks:
+      - id: bandit
+        args: ["--config=bandit.yaml"]
+
+  - repo: local
+    hooks:
+      - id: trufflehog
+        name: TruffleHog
+        description: Detect secrets in your data.
+        entry: bash -c 'docker run --rm -v "$(pwd):/workdir" -i --rm trufflesecurity/trufflehog:latest git file:///workdir --since-commit HEAD --only-verified --fail'
+        language: system
+        stages: ["pre-commit", "pre-push"]

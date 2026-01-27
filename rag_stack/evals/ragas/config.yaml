@@ -1,6 +1,7 @@
 dataset:
   name: Linq-AI-Research/FinDER
   split: train
+  revision: "REPLACE_WITH_DATASET_REVISION"
   limit: 5
   question_field_candidates:
     - text

@@ -1,6 +1,5 @@
 """Fallback Interpreter shim for platforms without ai_edge_litert wheels."""
 
-
 try:
     from tensorflow.lite import Interpreter as _TfLiteInterpreter
 except Exception:
@@ -13,6 +12,5 @@ except Exception:
         ) from exc
 
 
-class Interpreter(_TfLiteInterpreter):
+class Interpreter(_TfLiteInterpreter):  # type: ignore[misc]
     """Drop-in alias used by onnx2tf when ai_edge_litert is missing."""
-

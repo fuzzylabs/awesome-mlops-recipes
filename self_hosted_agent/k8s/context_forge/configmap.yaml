@@ -14,3 +14,8 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://logfire-backend.logfire.svc.cluster.local:4318"
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://logfire-backend.logfire.svc.cluster.local:4318/v1/traces"
   OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  MCPGATEWAY_ADMIN_API_ENABLED: "true"
+  MCPGATEWAY_UI_ENABLED: "true"
+  PLATFORM_ADMIN_EMAIL: "admin@example.com"
+  PLATFORM_ADMIN_PASSWORD: "password123"
+  PLATFORM_ADMIN_FULL_NAME: "Platform Administrator"

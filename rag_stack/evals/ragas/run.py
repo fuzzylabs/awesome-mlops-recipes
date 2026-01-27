@@ -1,10 +1,10 @@
 """Run RAGAS evaluation against a prepared dataset."""
 
-
 import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import mlflow
 from datasets import Dataset
@@ -12,13 +12,23 @@ from openai import OpenAI
 from ragas import evaluate
 from ragas.embeddings import HuggingFaceEmbeddings
 from ragas.llms import llm_factory
-from ragas.metrics import answer_correctness, context_precision, context_recall, faithfulness
+from ragas.metrics import (
+    answer_correctness,
+    context_precision,
+    context_recall,
+    faithfulness,
+)
 
 DATA_PATH = Path("evals/ragas/eval_data.jsonl")
 _GUARDRAIL_ENV = "RUN_FINANCIAL_ADVICE_GUARDRAIL"
 
 
-def _load_app_config():
+def _load_app_config() -> Any:
+    """Load the app configuration if available.
+
+    Returns:
+        The loaded config object, or None if unavailable.
+    """
     try:
         from src.config import load_config
 
@@ -35,20 +45,30 @@ def _load_app_config():
             return None
 
 
-def _build_llm():
+def _build_llm() -> Any:
+    """Build the LLM client for RAGAS evaluation.
+
+    Returns:
+        LLM instance compatible with RAGAS.
+    """
     config = _load_app_config()
-    model = os.getenv("RAGAS_LLM_MODEL") or (
-        config.generation.model if config else "gpt-4o-mini"
-    )
-    base_url = os.getenv("RAGAS_LLM_BASE_URL") or os.getenv("MODEL_BASE_URL") or (
-        config.generation.base_url if config else "http://localhost:8000/v1"
+    model = os.getenv("RAGAS_LLM_MODEL") or (config.generation.model if config else "gpt-4o-mini")
+    base_url = (
+        os.getenv("RAGAS_LLM_BASE_URL")
+        or os.getenv("MODEL_BASE_URL")
+        or (config.generation.base_url if config else "http://localhost:8000/v1")
     )
     api_key = os.getenv("OPENAI_API_KEY", "local")
     client = OpenAI(api_key=api_key, base_url=base_url)
     return llm_factory(model, client=client)
 
 
-def _build_embeddings():
+def _build_embeddings() -> Any:
+    """Build the embedding model for RAGAS evaluation.
+
+    Returns:
+        Embeddings instance compatible with RAGAS.
+    """
     config = _load_app_config()
     model = os.getenv("RAGAS_EMBEDDING_MODEL") or (
         config.models.embedding if config else "BAAI/bge-large-en-v1.5"
@@ -58,9 +78,15 @@ def _build_embeddings():
 
 
 def load_eval_dataset() -> Dataset:
+    """Load the evaluation dataset from JSONL.
+
+    Returns:
+        The dataset for evaluation.
+    """
     if not DATA_PATH.exists():
         raise FileNotFoundError(
-            f"Missing {DATA_PATH}. Create a JSONL file with question, answer, contexts, ground_truth."
+            f"Missing {DATA_PATH}. "
+            "Create a JSONL file with question, answer, contexts, ground_truth."
         )
     records = []
     with DATA_PATH.open("r", encoding="utf-8") as handle:
@@ -70,11 +96,21 @@ def load_eval_dataset() -> Dataset:
 
 
 def _should_run_financial_advice_guardrail() -> bool:
+    """Check whether to run the financial advice guardrail.
+
+    Returns:
+        True if the guardrail should run, False otherwise.
+    """
     flag = os.getenv(_GUARDRAIL_ENV, "")
     return flag.lower() in {"1", "true", "yes"}
 
 
 def main() -> None:
+    """Run RAGAS evaluation and optional guardrail checks.
+
+    Returns:
+        None.
+    """
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
     dataset = load_eval_dataset()
     llm = _build_llm()

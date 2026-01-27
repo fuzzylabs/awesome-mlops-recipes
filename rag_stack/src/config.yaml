@@ -12,8 +12,7 @@ models:
   reranker: BAAI/bge-reranker-base
 
 generation:
-  #base_url: http://qwen3.vllm.svc.cluster.local:8000/v1
-  base_url: http://rayserve-vllm-serve-svc.rayserve.svc.cluster.local:8000/v1 # Part 2
+  base_url: http://qwen3.vllm.svc.cluster.local:8000/v1
   model: Qwen/Qwen3-4B-Thinking-2507
   temperature: 0.2
 
